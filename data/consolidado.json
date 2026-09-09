@@ -1,0 +1,1399 @@
+{
+  "misicata": [
+    [
+      "casa1",
+      "Casa 1",
+      "Casa Tipo 1",
+      176,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa2",
+      "Casa 2",
+      "Casa Tipo 1",
+      111,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa3",
+      "Casa 3",
+      "Casa Tipo 1",
+      111,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa4",
+      "Casa 4",
+      "Casa Tipo 1",
+      110,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa5",
+      "Casa 5",
+      "Casa Tipo 1",
+      109,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa6",
+      "Casa 6",
+      "Casa Tipo 2",
+      206,
+      158,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa7",
+      "Casa 7",
+      "Casa Tipo 1",
+      98,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa8",
+      "Casa 8",
+      "Casa Tipo 1",
+      98,
+      117,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "casa9",
+      "Casa 9",
+      "Casa Tipo 1",
+      98,
+      117,
+      3,
+      2.5,
+      2,
+      "no_disponible",
+      null
+    ],
+    [
+      "casa10",
+      "Casa 10",
+      "Casa Tipo 1",
+      98,
+      117,
+      3,
+      2.5,
+      2,
+      "disponible",
+      115500
+    ],
+    [
+      "casa11",
+      "Casa 11",
+      "Casa Tipo 1",
+      215,
+      146,
+      3,
+      2.5,
+      2,
+      "vendida",
+      null
+    ],
+    [
+      "suite1",
+      "Suite 1",
+      "Suite",
+      115,
+      52,
+      1,
+      1.5,
+      1,
+      "disponible",
+      77000
+    ],
+    [
+      "suite2",
+      "Suite 2",
+      "Suite",
+      null,
+      72,
+      1,
+      1.5,
+      1,
+      "vendida",
+      null
+    ]
+  ],
+  "aura": [
+    {
+      "id": "201",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 128.32,
+      "dorm": 3,
+      "banos": 2.5,
+      "terraza": 13.34,
+      "bodega": "8 (3.79 m²)",
+      "parqueadero": "20",
+      "areaTotal": 145.45,
+      "precio": 224800
+    },
+    {
+      "id": "202",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 86.8,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 2.7,
+      "bodega": "14 (3.77 m²)",
+      "parqueadero": "15",
+      "areaTotal": 93.27,
+      "precio": 148500
+    },
+    {
+      "id": "203",
+      "tipo": "Suite",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "204",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 90.24,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 81.26,
+      "bodega": "19 (3.71 m²)",
+      "parqueadero": "28",
+      "areaTotal": 175.21,
+      "precio": 198000
+    },
+    {
+      "id": "301",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "302",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 86.8,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 2.7,
+      "bodega": "23 (4.34 m²)",
+      "parqueadero": "27",
+      "areaTotal": 93.84,
+      "precio": 149000
+    },
+    {
+      "id": "303",
+      "tipo": "Suite",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "304",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 90.24,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 0,
+      "bodega": "21 (6.02 m²)",
+      "parqueadero": "26",
+      "areaTotal": 96.26,
+      "precio": 153300
+    },
+    {
+      "id": "401",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "402",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "403",
+      "tipo": "Suite",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "404",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 90.24,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 0,
+      "bodega": "20 (4.45 m²)",
+      "parqueadero": "25",
+      "areaTotal": 94.69,
+      "precio": 156000
+    },
+    {
+      "id": "501",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "502",
+      "tipo": "Suite",
+      "estado": "disponible",
+      "util": 63.45,
+      "dorm": 1,
+      "banos": 1.5,
+      "terraza": 2.7,
+      "bodega": "9 (3.10 m²)",
+      "parqueadero": "17",
+      "areaTotal": 69.25,
+      "precio": 116700
+    },
+    {
+      "id": "503",
+      "tipo": "Suite",
+      "estado": "disponible",
+      "util": 46.96,
+      "dorm": 1,
+      "banos": 1.5,
+      "terraza": 0,
+      "bodega": "7 (4.59 m²)",
+      "parqueadero": null,
+      "areaTotal": 51.55,
+      "precio": 92200
+    },
+    {
+      "id": "504",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 90.24,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 0,
+      "bodega": "16 (4.75 m²)",
+      "parqueadero": "24",
+      "areaTotal": 94.99,
+      "precio": 157000
+    },
+    {
+      "id": "601",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "602",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "603",
+      "tipo": "Departamento",
+      "estado": "disponible",
+      "util": 90.24,
+      "dorm": 2,
+      "banos": 2,
+      "terraza": 0,
+      "bodega": "12 (3.06 m²)",
+      "parqueadero": "16",
+      "areaTotal": 93.3,
+      "precio": 160000
+    },
+    {
+      "id": "701",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "702",
+      "tipo": "Suite",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    },
+    {
+      "id": "703",
+      "tipo": "Departamento",
+      "estado": "vendida",
+      "util": null,
+      "dorm": null,
+      "banos": null,
+      "terraza": null,
+      "bodega": null,
+      "parqueadero": null,
+      "areaTotal": null,
+      "precio": null
+    }
+  ],
+  "aura_extra_inventory": [
+    {
+      "id": "parqueadero-5",
+      "tipo": "parqueadero",
+      "precio": 12000,
+      "estado": "disponible"
+    },
+    {
+      "id": "parqueadero-6",
+      "tipo": "parqueadero",
+      "precio": 12000,
+      "estado": "disponible"
+    },
+    {
+      "id": "parqueadero-14",
+      "tipo": "parqueadero",
+      "precio": 12000,
+      "estado": "disponible"
+    },
+    {
+      "id": "bodega-7",
+      "tipo": "bodega",
+      "precio": 5000,
+      "estado": "disponible"
+    },
+    {
+      "id": "bodega-13",
+      "tipo": "bodega",
+      "precio": 3200,
+      "estado": "disponible"
+    },
+    {
+      "id": "bodega-18",
+      "tipo": "bodega",
+      "precio": 5200,
+      "estado": "disponible"
+    }
+  ],
+  "alabes": [
+    {
+      "id": "A0",
+      "tipo": "SUITE",
+      "planta": null,
+      "precio": 86000.0,
+      "precio_preventa": 80400.0,
+      "estado": "reservado",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 54.07,
+      "bodega_id": "22",
+      "bodega_area": 2.75
+    },
+    {
+      "id": "A1",
+      "tipo": "SUITE",
+      "planta": null,
+      "precio": 87500.0,
+      "precio_preventa": 81900.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 54.97,
+      "bodega_id": "23",
+      "bodega_area": 2.71
+    },
+    {
+      "id": "A2",
+      "tipo": "SUITE",
+      "planta": null,
+      "precio": 89500.0,
+      "precio_preventa": 83600.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 56.31,
+      "bodega_id": "24",
+      "bodega_area": 2.69
+    },
+    {
+      "id": "A3",
+      "tipo": "MONOAMBIENTE",
+      "planta": null,
+      "precio": 81600.0,
+      "precio_preventa": 76000.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 50.86,
+      "bodega_id": "34",
+      "bodega_area": 2.33
+    },
+    {
+      "id": "L01",
+      "tipo": "LOCAL",
+      "planta": null,
+      "precio": 100900.0,
+      "precio_preventa": 95500.0,
+      "estado": "disponible",
+      "dorm": null,
+      "banos": 1,
+      "areaUtil": 54.3,
+      "bodega_id": "18",
+      "bodega_area": 3.83
+    },
+    {
+      "id": "L02",
+      "tipo": "LOCAL",
+      "planta": null,
+      "precio": 76500.0,
+      "precio_preventa": 72500.0,
+      "estado": "reservado",
+      "dorm": null,
+      "banos": 1,
+      "areaUtil": 40.65,
+      "bodega_id": "19",
+      "bodega_area": 3.95
+    },
+    {
+      "id": "L03",
+      "tipo": "LOCAL",
+      "planta": null,
+      "precio": 76800.0,
+      "precio_preventa": 72700.0,
+      "estado": "reservado",
+      "dorm": null,
+      "banos": 1,
+      "areaUtil": 40.81,
+      "bodega_id": "20",
+      "bodega_area": 4.06
+    },
+    {
+      "id": "L04",
+      "tipo": "LOCAL",
+      "planta": null,
+      "precio": 84000.0,
+      "precio_preventa": 79600.0,
+      "estado": "disponible",
+      "dorm": null,
+      "banos": 1,
+      "areaUtil": 44.77,
+      "bodega_id": "21",
+      "bodega_area": 4.29
+    },
+    {
+      "id": "B0",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 66800.0,
+      "precio_preventa": 61200.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.02,
+      "bodega_id": "25",
+      "bodega_area": 2.68
+    },
+    {
+      "id": "B1",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 67900.0,
+      "precio_preventa": 62200.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.51,
+      "bodega_id": "26",
+      "bodega_area": 2.66
+    },
+    {
+      "id": "B2",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 69000.0,
+      "precio_preventa": 63200.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 39.38,
+      "bodega_id": "27",
+      "bodega_area": 2.65
+    },
+    {
+      "id": "B3",
+      "tipo": "MONOAMBIENTE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 64900.0,
+      "precio_preventa": 59400.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 37.02,
+      "bodega_id": "33",
+      "bodega_area": 2.4
+    },
+    {
+      "id": "B4",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 73500.0,
+      "precio_preventa": 66900.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 41.83,
+      "bodega_id": "28",
+      "bodega_area": 2.63
+    },
+    {
+      "id": "B5",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 83000.0,
+      "precio_preventa": 75900.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 47.59,
+      "bodega_id": "29",
+      "bodega_area": 2.62
+    },
+    {
+      "id": "B6",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 82600.0,
+      "precio_preventa": 75500.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 47.33,
+      "bodega_id": "30",
+      "bodega_area": 2.6
+    },
+    {
+      "id": "B7",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 87400.0,
+      "precio_preventa": 79900.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 50.14,
+      "bodega_id": "31",
+      "bodega_area": 2.59
+    },
+    {
+      "id": "B8",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 68500.0,
+      "precio_preventa": 62700.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.84,
+      "bodega_id": "02",
+      "bodega_area": 3.05
+    },
+    {
+      "id": "B9",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 68500.0,
+      "precio_preventa": 62700.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.84,
+      "bodega_id": "04",
+      "bodega_area": 3.05
+    },
+    {
+      "id": "B10",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 83774.99999999999,
+      "precio_preventa": 83774.99999999999,
+      "estado": "vendida",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 55.85,
+      "bodega_id": "16",
+      "bodega_area": 3.59
+    },
+    {
+      "id": "B11",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 101000.0,
+      "precio_preventa": 92500.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1.5,
+      "areaUtil": 57.18,
+      "bodega_id": "07",
+      "bodega_area": 4.76
+    },
+    {
+      "id": "B12",
+      "tipo": "SUITE",
+      "planta": "PRIMERA PLANTA ALTA",
+      "precio": 94700.0,
+      "precio_preventa": 86800.0,
+      "estado": "reservado",
+      "dorm": 1,
+      "banos": 1.5,
+      "areaUtil": 53.16,
+      "bodega_id": "08",
+      "bodega_area": 5.38
+    },
+    {
+      "id": "C0",
+      "tipo": "SUITE",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 67000.0,
+      "precio_preventa": 61500.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.02,
+      "bodega_id": "05",
+      "bodega_area": 3.05
+    },
+    {
+      "id": "C1",
+      "tipo": "SUITE",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 68300.0,
+      "precio_preventa": 62500.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.72,
+      "bodega_id": "06",
+      "bodega_area": 3.05
+    },
+    {
+      "id": "C2",
+      "tipo": "SUITE",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 69500.0,
+      "precio_preventa": 63500.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 39.38,
+      "bodega_id": "03",
+      "bodega_area": 3.05
+    },
+    {
+      "id": "C3",
+      "tipo": "MONOAMBIENTE",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 65000.0,
+      "precio_preventa": 59500.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 36.99,
+      "bodega_id": "09",
+      "bodega_area": 2.66
+    },
+    {
+      "id": "C4",
+      "tipo": "2 DORMITORIOS",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 111200.0,
+      "precio_preventa": 101600.0,
+      "estado": "disponible",
+      "dorm": 2,
+      "banos": 2,
+      "areaUtil": 64.02,
+      "bodega_id": "11",
+      "bodega_area": 2.95
+    },
+    {
+      "id": "C5",
+      "tipo": "2 DORMITORIOS",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 121800.0,
+      "precio_preventa": 111300.0,
+      "estado": "disponible",
+      "dorm": 2,
+      "banos": 2,
+      "areaUtil": 70.19,
+      "bodega_id": "12",
+      "bodega_area": 3.07
+    },
+    {
+      "id": "C6",
+      "tipo": "2  DORMITORIOS",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 116800.0,
+      "precio_preventa": 106900.0,
+      "estado": "disponible",
+      "dorm": 2,
+      "banos": 2,
+      "areaUtil": 66.97,
+      "bodega_id": "17",
+      "bodega_area": 3.71
+    },
+    {
+      "id": "C7",
+      "tipo": "SUITE TIPO LOFT",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 112200.0,
+      "precio_preventa": 102500.0,
+      "estado": "disponible",
+      "dorm": 2,
+      "banos": 1,
+      "areaUtil": 64.39,
+      "bodega_id": "14",
+      "bodega_area": 3.33
+    },
+    {
+      "id": "C8",
+      "tipo": "SUITE",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 68900.0,
+      "precio_preventa": 63200.0,
+      "estado": "disponible",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.84,
+      "bodega_id": "01",
+      "bodega_area": 3.58
+    },
+    {
+      "id": "C9",
+      "tipo": "SUITE",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 68500.0,
+      "precio_preventa": 62500.0,
+      "estado": "reservado",
+      "dorm": 1,
+      "banos": 1,
+      "areaUtil": 38.84,
+      "bodega_id": "10",
+      "bodega_area": 2.81
+    },
+    {
+      "id": "C10",
+      "tipo": "2 DORMITORIOS",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 147900.0,
+      "precio_preventa": 135600.0,
+      "estado": "disponible",
+      "dorm": 2,
+      "banos": 2,
+      "areaUtil": 89.92,
+      "bodega_id": "15",
+      "bodega_area": 3.46
+    },
+    {
+      "id": "C11",
+      "tipo": "2 DORMITORIOS",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 137500.0,
+      "precio_preventa": 126000.0,
+      "estado": "reservado",
+      "dorm": 2,
+      "banos": 2,
+      "areaUtil": 83.48,
+      "bodega_id": "32",
+      "bodega_area": 4
+    },
+    {
+      "id": "C12",
+      "tipo": "2 DORMITORIOS",
+      "planta": "SEGUNDA PLANTA ALTA",
+      "precio": 160500.0,
+      "precio_preventa": 148200.0,
+      "estado": "reservado",
+      "dorm": 2,
+      "banos": 2,
+      "areaUtil": 105.64,
+      "bodega_id": "13",
+      "bodega_area": 3.2
+    }
+  ],
+  "alabes_parking": [
+    {
+      "id": "1",
+      "tipo": "carro",
+      "precio": 10200.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "2",
+      "tipo": "carro",
+      "precio": 10200.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "3",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "4",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "5",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "6",
+      "tipo": "carro",
+      "precio": 12300.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "7",
+      "tipo": "carro",
+      "precio": 14600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "8",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "9",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "10",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "11",
+      "tipo": "carro",
+      "precio": 10000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "12",
+      "tipo": "carro",
+      "precio": 10000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "13",
+      "tipo": "carro",
+      "precio": 10000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "14",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "15",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "16",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "17",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "18",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "19",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "20",
+      "tipo": "carro",
+      "precio": 9600.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "21",
+      "tipo": "carro",
+      "precio": 13300.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "22",
+      "tipo": "carro",
+      "precio": 12500.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "1",
+      "tipo": "moto",
+      "precio": 2000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "2",
+      "tipo": "moto",
+      "precio": 2000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "3",
+      "tipo": "moto",
+      "precio": 2000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "4",
+      "tipo": "moto",
+      "precio": 2000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "5",
+      "tipo": "moto",
+      "precio": 2000.0,
+      "estado": "disponible"
+    },
+    {
+      "id": "6",
+      "tipo": "moto",
+      "precio": 2000.0,
+      "estado": "disponible"
+    }
+  ],
+  "porton": [
+    {
+      "id": "A14",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2546.52,
+      "precio": 76395.6,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A18",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2597.51,
+      "precio": 77925.3,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A20",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2570.75,
+      "precio": 77122.5,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A21",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2394.49,
+      "precio": 67045.72,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A22",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2572.83,
+      "precio": 77184.9,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A24",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2506.2,
+      "precio": 75186.0,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A25",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2344.39,
+      "precio": 65642.92,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A32",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2501.91,
+      "precio": 75057.29999999999,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A40",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2687.78,
+      "precio": 80633.40000000001,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A41",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2626.29,
+      "precio": 78788.7,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A42",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2889.09,
+      "precio": 80894.52,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A43",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 3302.04,
+      "precio": 92457.12,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A44",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2965.35,
+      "precio": 88960.5,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A46",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2898.95,
+      "precio": 86968.5,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A51",
+      "categoria": "A",
+      "precio_m2": 28.0,
+      "metraje": 2507.46,
+      "precio": 70208.88,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A52",
+      "categoria": "C",
+      "precio_m2": 25.0,
+      "metraje": 2601.77,
+      "precio": 65044.25,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A56",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2759.2,
+      "precio": 77257.59999999999,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A57",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2507.36,
+      "precio": 70206.08,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A59",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2684.81,
+      "precio": 75174.68,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A60",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2735.69,
+      "precio": 82070.7,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A61",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 3116.3,
+      "precio": 87256.40000000001,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A62",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2887.37,
+      "precio": 80846.36,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A63",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 4843.98,
+      "precio": 135631.44,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A-64",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 3264.47,
+      "precio": 91405.15999999999,
+      "estado": "no_disponible",
+      "nota": "SR OCAMPO CAMBIO POR LOTE A-12"
+    },
+    {
+      "id": "A71",
+      "categoria": "C",
+      "precio_m2": 25.0,
+      "metraje": 3711.19,
+      "precio": 92779.75,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A72",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 2797.73,
+      "precio": 78336.44,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A73",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 3102.35,
+      "precio": 93070.5,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A74",
+      "categoria": "C",
+      "precio_m2": 25.0,
+      "metraje": 3266.22,
+      "precio": 81655.5,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A75",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 3165.37,
+      "precio": 94961.09999999999,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A76",
+      "categoria": "C",
+      "precio_m2": 25.0,
+      "metraje": 3258.79,
+      "precio": 81469.75,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A77",
+      "categoria": "A",
+      "precio_m2": 30.0,
+      "metraje": 2862.72,
+      "precio": 85881.59999999999,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A81",
+      "categoria": "B",
+      "precio_m2": 28.0,
+      "metraje": 4658.13,
+      "precio": 130427.64,
+      "estado": "disponible",
+      "nota": null
+    },
+    {
+      "id": "A82",
+      "categoria": "AA",
+      "precio_m2": 33.0,
+      "metraje": 3411.4,
+      "precio": 112576.2,
+      "estado": "disponible",
+      "nota": null
+    }
+  ]
+}

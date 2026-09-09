@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title id="page-title">Cotizador — FORXA</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127968;</text></svg>">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="internal-bar no-print">Material interno FORXA · no compartir este enlace</div>
+<header class="site-header no-print">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.png" alt="FORXA Inmobiliaria" onerror="this.style.display='none'">
+      <span class="brand-text"><strong id="brand-project-name">FORXA</strong><span>Cotizador interno</span></span>
+    </a>
+    <div class="header-actions" id="header-actions"></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:28px;padding-bottom:64px;">
+
+  <div id="form-view">
+    <div class="no-print" style="margin-bottom:16px;">
+      <a href="index.html" class="btn btn-ghost btn-sm">&larr; Cambiar de proyecto</a>
+    </div>
+
+    <div class="card">
+      <h3>Datos del cliente</h3>
+      <div class="field"><label>Nombre completo *</label><input type="text" id="cli-nombre" placeholder="Ej. María García López"></div>
+      <div class="row2">
+        <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cli-tel" placeholder="+593 99 000 0000"></div>
+        <div class="field"><label>Correo electrónico</label><input type="email" id="cli-email" placeholder="cliente@correo.com"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 id="unit-section-title">Seleccionar unidad(es)</h3>
+      <p class="hint" id="unit-section-hint" style="margin-bottom:12px;"></p>
+      <div id="unit-grid" class="unit-grid"><div class="empty-state">Cargando unidades…</div></div>
+    </div>
+
+    <div class="card" id="discount-card" hidden>
+      <h3>Descuento por negociación</h3>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost" id="desc-minus">&minus;</button>
+        <div style="flex:1;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--olive);" id="desc-valor">$0</div>
+          <div class="hint" id="desc-contador">Sin descuento aplicado</div>
+        </div>
+        <button type="button" class="btn btn-primary" id="desc-plus">+ descuento</button>
+      </div>
+    </div>
+
+    <div class="card" id="financing-card">
+      <h3>Plan de financiamiento</h3>
+      <div id="financing-fields"></div>
+      <div id="financing-summary" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <h3>Notas adicionales</h3>
+      <textarea id="notas" placeholder="Observaciones, condiciones especiales..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;" id="generate-btn">Generar proforma &rarr;</button>
+  </div>
+
+  <div id="proforma-view" hidden>
+    <div class="no-print" style="display:flex;gap:12px;margin-bottom:20px;">
+      <button class="btn btn-ghost" id="back-btn">&larr; Editar datos</button>
+      <button class="btn btn-primary" id="print-btn">Imprimir / Guardar PDF</button>
+    </div>
+    <div id="proforma-doc"></div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/cotizador.js"></script>
+</body>
+</html>
