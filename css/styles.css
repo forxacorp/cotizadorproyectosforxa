@@ -115,9 +115,7 @@ img { max-width: 100%; display: block; }
 .login-shell {
   min-height: calc(100vh - 105px);
   display: flex; align-items: center; justify-content: center; padding: 32px 20px;
- background:
-       radial-gradient(ellipse 720px 480px at 50% -8%, rgba(45,95,220,.30), transparent 62%),
-       linear-gradient(165deg, var(--carbon) 0%, #1c1b16 100%);
+  background: linear-gradient(135deg, #3c9ff4 0%, #1d62db 100%);
 }
 .login-card {
   width: 100%; max-width: 380px; background: var(--card);
@@ -153,9 +151,7 @@ img { max-width: 100%; display: block; }
    resplandor azul que el login, para que "esto es de FORXA" se sienta antes
    de llegar a la cuadrícula de proyectos. */
 .hero-band {
-  background:
-    radial-gradient(ellipse 640px 420px at 50% -12%, rgba(45,95,220,.28), transparent 60%),
-    linear-gradient(165deg, var(--carbon) 0%, #1c1b16 100%);
+  background: linear-gradient(135deg, #3c9ff4 0%, #1d62db 100%);
   padding: 48px 0 44px;
   border-bottom: 3px solid var(--arena);
 }
