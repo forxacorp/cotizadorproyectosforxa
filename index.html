@@ -38,10 +38,13 @@
 
 <!-- ---------- Picker de proyectos ---------- -->
 <main id="picker-view" hidden>
-  <section class="hero wrap">
-    <span class="kicker">FORXA · Uso interno</span>
-    <h1>¿Para qué proyecto vas a cotizar?</h1>
-    <p>Selecciona un proyecto para ver sus unidades disponibles y generar la proforma.</p>
+  <section class="hero-band">
+    <div class="wrap hero">
+      <img class="hero-logo" src="assets/logo.png" alt="FORXA Inmobiliaria" onerror="this.style.display='none'">
+      <span class="kicker">FORXA · Cotizador interno</span>
+      <h1>¿Para qué proyecto vas a cotizar?</h1>
+      <p>Selecciona un proyecto para ver sus unidades disponibles y generar la proforma.</p>
+    </div>
   </section>
   <section class="wrap">
     <div id="project-grid" class="project-grid">
@@ -97,8 +100,11 @@ async function loadProjects() {
     const card = document.createElement('a');
     card.className = 'project-card';
     card.href = `cotizador.html?proyecto=${encodeURIComponent(p.id)}`;
-    card.style.backgroundColor = p.color_primario;
-    if (coverUrl) card.style.backgroundImage = `url('${coverUrl}')`;
+    // Mientras no haya portada subida, degradado con los colores propios del
+    // proyecto (en vez de un color plano) para que cada tarjeta se distinga.
+    card.style.backgroundImage = coverUrl
+      ? `url('${coverUrl}')`
+      : `linear-gradient(150deg, ${p.color_primario}, ${p.color_acento})`;
     card.innerHTML = `
       <div class="scrim"></div>
       <div class="content">
