@@ -41,6 +41,24 @@ async function boot() {
   await loadUnidades();
   renderFinancingFields();
   wireEvents();
+  loadAsesorGuardado();
+}
+
+// El asesor llena su nombre/teléfono una vez y queda recordado en este
+// navegador (localStorage), para no volver a escribirlo en cada proforma.
+function loadAsesorGuardado() {
+  try {
+    const nombre = localStorage.getItem('forxa_asesor_nombre');
+    const tel = localStorage.getItem('forxa_asesor_tel');
+    if (nombre) qs('asesor-nombre').value = nombre;
+    if (tel) qs('asesor-tel').value = tel;
+  } catch (e) { /* localStorage puede fallar en modo privado; no es crítico */ }
+}
+function guardarAsesor(nombre, tel) {
+  try {
+    localStorage.setItem('forxa_asesor_nombre', nombre);
+    localStorage.setItem('forxa_asesor_tel', tel);
+  } catch (e) { /* no crítico */ }
 }
 
 // Banner con la identidad propia del proyecto (color_primario/color_acento
@@ -220,77 +238,114 @@ function renderFinancingSummary() {
 
 async function generarProforma() {
   if (!seleccionadas.length) { showToast('Selecciona al menos una unidad.'); return; }
+  const asesorNombre = qs('asesor-nombre').value.trim();
+  const asesorTel = qs('asesor-tel').value.trim();
+  if (!asesorNombre || !asesorTel) { showToast('Ingresa tu nombre y teléfono de asesor.'); return; }
   const nombre = qs('cli-nombre').value.trim();
   if (!nombre) { showToast('Ingresa el nombre del cliente.'); return; }
+  guardarAsesor(asesorNombre, asesorTel);
 
   const tel = qs('cli-tel').value.trim();
   const email = qs('cli-email').value.trim();
   const notas = qs('notas').value.trim();
   const hoy = new Date();
+  const asesorEmail = CotizadorAuth.getUser().email;
+  const logoProyecto = `assets/logos/${PROYECTO.id}.png`;
 
-  let bodySections = '';
+  let unitSections = '';
+  const fotos = []; // { caption, url } — van todas juntas en la página 2
   for (const u of seleccionadas) {
     const plan = calcularPlan(u);
     const fotoUrl = await signedMediaUrl(u.raw?.foto_url);
-    bodySections += `
-      <div class="pf-line" style="display:block;border:none;padding:0;margin-bottom:24px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;border-bottom:2px solid var(--carbon);padding-bottom:16px;margin-bottom:16px;">
+    if (fotoUrl) fotos.push({ caption: `${u.nombre}${u.specsText ? ' · ' + u.specsText : ''}`, url: fotoUrl });
+
+    unitSections += `
+      <div class="pf-unit">
+        <div class="pf-unit-head">
           <div>
-            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--arena);font-weight:700;">Propiedad cotizada</div>
-            <h2 style="font-size:24px;margin-top:4px;">${u.nombre}</h2>
-            <div class="hint">${u.specsText}</div>
+            <div class="tag">Propiedad cotizada</div>
+            <h2>${u.nombre}</h2>
+            <div class="specs">${u.specsText}</div>
           </div>
-          <div style="text-align:right;">
-            ${plan.desc > 0 ? `<div class="hint" style="text-decoration:line-through;">${fmtMoney(u.precio)}</div>` : ''}
-            <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--olive);">${fmtMoney(plan.precioFinal)}</div>
+          <div class="price-box">
+            ${plan.desc > 0 ? `<div class="price-old">${fmtMoney(u.precio)}</div>` : ''}
+            <div class="price-final">${fmtMoney(plan.precioFinal)}</div>
+            <div class="price-final-label">Precio final</div>
           </div>
         </div>
-        ${fotoUrl ? `<img src="${fotoUrl}" style="width:100%;border-radius:12px;margin-bottom:16px;">` : ''}
         <div class="pf-breakdown">
-          ${plan.desc > 0 ? `<div class="pf-line"><span>Descuento por negociación</span><b>- ${fmtMoney(plan.desc)}</b></div>` : ''}
+          <div class="pf-line"><span>Precio de lista</span><b>${fmtMoney(u.precio)}</b></div>
+          ${plan.desc > 0 ? `<div class="pf-line"><span>Descuento por negociación</span><b>&minus; ${fmtMoney(plan.desc)}</b></div>` : ''}
           <div class="pf-line"><span>Reserva</span><b>${fmtMoney(plan.reserva)}</b></div>
           ${plan.promesa ? `<div class="pf-line"><span>Promesa de compraventa</span><b>${fmtMoney(plan.promesa)}</b></div>` : ''}
           ${plan.capital ? `<div class="pf-line"><span>Pagos/cuotas a capital</span><b>${fmtMoney(plan.capital)}</b></div>` : ''}
-          <div class="pf-line"><span><strong>Saldo a financiar</strong></span><b>${fmtMoney(plan.saldo)}</b></div>
+          <div class="pf-line total"><span>Saldo a financiar</span><b>${fmtMoney(plan.saldo)}</b></div>
         </div>
         ${plan.cuota ? `
         <div class="pf-cuota">
           <div>
-            <div style="font-size:12.5px;opacity:.8;">Cuota mensual estimada</div>
-            <div style="font-family:var(--font-display);font-size:30px;font-weight:800;">${fmtMoney(plan.cuota)}<span style="font-size:14px;font-weight:400;"> /mes</span></div>
+            <div class="label">Cuota mensual estimada</div>
+            <div class="amount">${fmtMoney(plan.cuota)}<span> /mes</span></div>
           </div>
-          ${plan.cuota20 ? `<div style="text-align:right;font-size:12.5px;line-height:1.8;">20 años: <strong>${fmtMoney(plan.cuota20)}</strong><br>15 años: <strong>${fmtMoney(plan.cuota15)}</strong></div>` : ''}
+          ${plan.cuota20 ? `<div class="alt">20 años: <strong>${fmtMoney(plan.cuota20)}</strong><br>15 años: <strong>${fmtMoney(plan.cuota15)}</strong></div>` : ''}
         </div>` : ''}
       </div>`;
   }
 
-  const html = `
-    <div class="pf-hero" style="background:linear-gradient(160deg, var(--carbon), var(--olive));">
-      <div class="scrim"></div>
-      <div style="display:flex;justify-content:space-between;">
-        <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--arena);">Proforma comercial</span>
-        <span style="font-size:11.5px;background:rgba(255,255,255,.14);padding:5px 13px;border-radius:20px;">${fmtDate(hoy)}</span>
+  const page1 = `
+    <div class="pf-page">
+      <div class="pf-letterhead">
+        <div class="logos">
+          <img src="assets/logo.png" alt="FORXA Inmobiliaria" onerror="this.style.display='none'">
+          <div class="div"></div>
+          <img src="${logoProyecto}" alt="${PROYECTO.nombre}" onerror="this.style.display='none'">
+        </div>
+        <div class="doc-meta">
+          <div class="doc-title">Proforma</div>
+          <div class="doc-date">${fmtDate(hoy)}</div>
+        </div>
       </div>
-      <div>
-        <h1 style="font-size:34px;">${PROYECTO.nombre}</h1>
-        <p style="opacity:.75;font-size:13px;margin-top:6px;">${PROYECTO.tagline || ''}</p>
+
+      <div class="pf-parties">
+        <div>
+          <div class="pf-party-label">Asesor</div>
+          <div class="pf-party-name">${asesorNombre}</div>
+          <div class="pf-party-meta">${asesorTel}${asesorEmail ? ' · ' + asesorEmail : ''}</div>
+        </div>
+        <div>
+          <div class="pf-party-label">Cotización preparada para</div>
+          <div class="pf-party-name">${nombre}</div>
+          <div class="pf-party-meta">${[tel, email].filter(Boolean).join(' · ') || '&mdash;'}</div>
+        </div>
       </div>
-    </div>
-    <div class="pf-body">
-      <div style="padding-bottom:20px;margin-bottom:24px;border-bottom:1px solid var(--border);">
-        <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);">Cotización preparada para</span>
-        <div style="font-family:var(--font-display);font-size:20px;">${nombre}</div>
-        <div class="hint">${[tel, email].filter(Boolean).join(' · ')}</div>
+
+      ${unitSections}
+
+      ${notas ? `
+      <div class="pf-notes">
+        <div class="pf-party-label">Notas adicionales</div>
+        <p>${notas.replace(/\n/g, '<br>')}</p>
+      </div>` : ''}
+
+      <div class="pf-footer">
+        <div class="col"><strong>${asesorNombre}</strong><br>Asesor FORXA<br>${asesorTel}${asesorEmail ? '<br>' + asesorEmail : ''}</div>
+        <div class="col"><strong>FORXA Inmobiliaria</strong><br>${PROYECTO.nombre}${PROYECTO.ubicacion ? '<br>' + PROYECTO.ubicacion : ''}</div>
+        <div class="col"><strong>Vigencia</strong><br>Esta proforma es referencial y válida por 8 días desde su emisión. Precios y disponibilidad sujetos a confirmación al momento de la reserva.</div>
       </div>
-      ${bodySections}
-      ${notas ? `<div class="pf-breakdown" style="margin-top:8px;"><p style="padding:14px 0;">${notas.replace(/\n/g,'<br>')}</p></div>` : ''}
-    </div>
-    <div style="background:var(--carbon);color:rgba(255,255,255,.85);padding:24px 44px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="font-size:12px;">FORXA Inmobiliaria<br>${CotizadorAuth.getUser().email}</div>
-      <div style="font-size:11px;text-align:right;">Generada el ${fmtDate(hoy)}</div>
     </div>`;
 
-  qs('proforma-doc').innerHTML = html;
+  const page2 = fotos.length ? `
+    <div class="pf-page pf-photos">
+      <div class="pf-photos-title">Fichas de la propiedad</div>
+      <div class="pf-photos-sub">${PROYECTO.nombre} · ${fotos.length > 1 ? fotos.length + ' unidades cotizadas' : '1 unidad cotizada'}</div>
+      ${fotos.map(f => `
+        <div class="pf-photo-item">
+          <div class="cap">${f.caption}</div>
+          <img src="${f.url}">
+        </div>`).join('')}
+    </div>` : '';
+
+  qs('proforma-doc').innerHTML = page1 + page2;
   qs('form-view').hidden = true;
   qs('proforma-view').hidden = false;
   window.scrollTo(0, 0);

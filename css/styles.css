@@ -5,7 +5,7 @@
    con más aire, jerarquía y estados de interacción cuidados.
    ============================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Work+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Work+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   --carbon: #26251f;
@@ -164,7 +164,7 @@ img { max-width: 100%; display: block; }
 
 .project-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 22px; padding: 40px 0 64px;
+  gap: 22px; padding: 40px 0 110px;
 }
 .project-card {
   position: relative; border-radius: var(--radius-lg); overflow: hidden;
@@ -271,22 +271,95 @@ img { max-width: 100%; display: block; }
 .modal-box p { font-size: 14.5px; margin: 0 0 22px; color: var(--text); }
 .modal-box .modal-actions { display: flex; gap: 10px; justify-content: center; }
 
-/* ---------- proforma (documento imprimible) ---------- */
-#proforma-doc { background: #fff; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); }
-.pf-hero { position: relative; padding: 44px; color: #fff; min-height: 220px; display: flex; flex-direction: column; justify-content: space-between; }
-.pf-hero .scrim { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(38,37,31,.94), rgba(58,57,47,.55)); }
-.pf-hero > * { position: relative; z-index: 1; }
-.pf-body { padding: 36px 44px; }
-.pf-line { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+/* ---------- proforma (documento imprimible, tipo invoice) ---------- */
+/* Estructura de 2 páginas: .pf-page (datos + desglose) y .pf-page.pf-photos
+   (fichas de las unidades). break-before:page separa la 2da al imprimir.
+   La proforma usa su propia paleta e identidad tipográfica, fijas para los
+   4 proyectos (azul FORXA + sans-serif moderna), a propósito distintas del
+   resto del sitio: aquí es la marca FORXA la protagonista, no el proyecto. */
+:root {
+  --pf-blue: #1d62db;
+  --pf-blue-light: #3c9ff4;
+  --pf-gradient: linear-gradient(135deg, #3c9ff4 0%, #1d62db 100%);
+  --pf-font: 'Plus Jakarta Sans', 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+#proforma-doc, #proforma-doc * { font-family: var(--pf-font); }
+
+#proforma-doc { display: flex; flex-direction: column; gap: 24px; }
+.pf-page {
+  background: #fff; border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: var(--shadow-md); padding: 40px 48px 48px;
+}
+
+/* -- membrete: dos logos + título -- */
+.pf-letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 24px; border-bottom: 3px solid var(--pf-blue); }
+.pf-letterhead .logos { display: flex; align-items: center; gap: 18px; }
+.pf-letterhead .logos img { height: 46px; max-height: 46px; width: auto; max-width: 128px; object-fit: contain; }
+.pf-letterhead .logos .div { width: 1px; height: 34px; background: var(--border); }
+.pf-letterhead .doc-meta { text-align: right; }
+.pf-letterhead .doc-meta .doc-title { font-size: 30px; font-weight: 800; color: var(--pf-blue); letter-spacing: .01em; }
+.pf-letterhead .doc-meta .doc-date { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+/* -- asesor / cliente, dos columnas -- */
+.pf-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--border); }
+.pf-party-label { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+.pf-party-name { font-size: 17px; font-weight: 700; color: var(--carbon); }
+.pf-party-meta { font-size: 13px; color: var(--muted); margin-top: 3px; line-height: 1.6; }
+
+/* -- unidad cotizada -- */
+.pf-unit { padding: 28px 0; border-bottom: 1px solid var(--border); }
+.pf-unit:last-of-type { border-bottom: none; }
+.pf-unit-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
+.pf-unit-head .tag { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--pf-blue); font-weight: 700; }
+.pf-unit-head h2 { font-size: 26px; font-weight: 700; margin-top: 4px; color: var(--carbon); }
+.pf-unit-head .specs { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.pf-unit-head .price-box { text-align: right; }
+.pf-unit-head .price-old { font-size: 13px; color: var(--muted); text-decoration: line-through; }
+.pf-unit-head .price-final { font-size: 32px; font-weight: 800; color: var(--pf-blue); line-height: 1.1; }
+.pf-unit-head .price-final-label { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.pf-breakdown { background: var(--crema); border-radius: var(--radius); padding: 6px 22px; }
+.pf-line { display: flex; justify-content: space-between; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; gap: 16px; }
 .pf-line:last-child { border-bottom: none; }
-.pf-line b { font-family: var(--font-display); }
-.pf-breakdown { background: var(--crema); border-radius: var(--radius); padding: 4px 20px; }
-.pf-cuota { margin-top: 18px; background: linear-gradient(135deg, var(--carbon), var(--olive)); border-radius: var(--radius); padding: 24px 28px; color: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+.pf-line span { color: var(--text); }
+.pf-line b { font-size: 14.5px; font-weight: 700; white-space: nowrap; }
+.pf-line.total span, .pf-line.total b { font-size: 15.5px; font-weight: 800; color: var(--pf-blue); }
+
+.pf-cuota {
+  margin-top: 18px; background: var(--pf-gradient); border-radius: var(--radius);
+  padding: 22px 28px; color: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+}
+.pf-cuota .label { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; opacity: .82; }
+.pf-cuota .amount { font-size: 34px; font-weight: 800; margin-top: 2px; }
+.pf-cuota .amount span { font-size: 14px; font-weight: 400; opacity: .85; }
+.pf-cuota .alt { text-align: right; font-size: 12.5px; line-height: 1.9; }
+
+.pf-notes { margin-top: 8px; }
+.pf-notes .pf-party-label { margin-bottom: 6px; }
+.pf-notes p { font-size: 13px; color: var(--text); line-height: 1.7; }
+
+/* -- pie: asesor / FORXA / vigencia, tres columnas -- */
+.pf-footer { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 32px; padding-top: 22px; border-top: 1px solid var(--border); }
+.pf-footer .pf-party-label { margin-bottom: 6px; }
+.pf-footer .col { font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+.pf-footer .col strong { color: var(--text); }
+
+/* -- página 2: fichas fotográficas -- */
+.pf-photos-title { font-size: 20px; font-weight: 700; color: var(--pf-blue); margin-bottom: 4px; }
+.pf-photos-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 24px; }
+.pf-photo-item { margin-bottom: 28px; }
+.pf-photo-item:last-child { margin-bottom: 0; }
+.pf-photo-item .cap { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--carbon); margin-bottom: 8px; }
+.pf-photo-item img { width: 100%; border-radius: var(--radius); display: block; }
 
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
-  #proforma-doc { box-shadow: none; border-radius: 0; }
+  #proforma-doc { gap: 0; }
+  .pf-page { box-shadow: none; border-radius: 0; padding: 0; }
+  .pf-page + .pf-page { break-before: page; padding-top: 24px; }
+  /* Por si el badge de Netlify u otro overlay inyectado queda en el DOM al imprimir */
+  [class*="netlify" i], [id*="netlify" i] { display: none !important; }
 }
 
 .hint { color: var(--muted); font-size: 12.5px; }
