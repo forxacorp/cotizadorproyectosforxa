@@ -5,6 +5,7 @@
 const CotizadorAuth = (() => {
   let currentUser = null;
   let isAdmin = false;
+  let puedeVerHistorial = false;
 
   async function init() {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -13,14 +14,19 @@ const CotizadorAuth = (() => {
     return currentUser;
   }
 
+  // Una sola consulta a cotizador_admins resuelve tanto "es admin" (¿existe
+  // la fila?) como "puede ver el historial" (columna aparte) — son permisos
+  // independientes: alguien puede administrar proyectos sin ver el
+  // historial de clientes, o viceversa.
   async function checkAdmin() {
-    if (!currentUser) { isAdmin = false; return false; }
+    if (!currentUser) { isAdmin = false; puedeVerHistorial = false; return false; }
     const { data, error } = await supabaseClient
       .from('cotizador_admins')
-      .select('user_id')
+      .select('user_id, puede_ver_historial')
       .eq('user_id', currentUser.id)
       .maybeSingle();
     isAdmin = !error && !!data;
+    puedeVerHistorial = !error && !!data && !!data.puede_ver_historial;
     return isAdmin;
   }
 
@@ -57,8 +63,20 @@ const CotizadorAuth = (() => {
     return { user, isAdmin };
   }
 
+  // Igual que requireAdmin(): no redirige si no tiene permiso, para poder
+  // mostrar un aviso en pantalla en vez de un alert()+redirect confuso.
+  async function requireHistorialAccess() {
+    const user = await requireSession();
+    if (!user) return null;
+    return { user, puedeVerHistorial };
+  }
+
   function getUser() { return currentUser; }
   function getIsAdmin() { return isAdmin; }
+  function getPuedeVerHistorial() { return puedeVerHistorial; }
 
-  return { init, login, logout, requireSession, requireAdmin, getUser, getIsAdmin, checkAdmin };
+  return {
+    init, login, logout, requireSession, requireAdmin, requireHistorialAccess,
+    getUser, getIsAdmin, getPuedeVerHistorial, checkAdmin,
+  };
 })();

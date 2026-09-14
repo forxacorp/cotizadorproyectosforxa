@@ -11,6 +11,7 @@ async function boot() {
   document.getElementById('header-actions').innerHTML = `
     <span class="user-pill">${user.email}${isAdmin ? ' · admin' : ''}</span>
     <a href="index.html">Ver cotizador</a>
+    ${CotizadorAuth.getPuedeVerHistorial() ? '<a href="historial.html">Historial</a>' : ''}
     <button id="logout-btn">Cerrar sesión</button>`;
   document.getElementById('logout-btn').onclick = async () => { await CotizadorAuth.logout(); location.href = 'index.html'; };
 
@@ -31,10 +32,6 @@ on conflict (user_id) do nothing;</pre>
     return;
   }
 
-  document.getElementById('p-tipo').addEventListener('change', () => {});
-  document.getElementById('p-desc').addEventListener('change', (e) => {
-    document.getElementById('p-desc-monto-wrap').hidden = !e.target.checked;
-  });
   document.getElementById('project-form').addEventListener('submit', saveProject);
   document.getElementById('p-cancel').addEventListener('click', resetProjectForm);
   document.getElementById('unit-project-select').addEventListener('change', loadUnits);
@@ -55,7 +52,7 @@ async function loadProjects() {
     const cover = await signedMediaUrl(p.cover_url);
     return `<tr>
       <td>${cover ? `<img class="thumb" src="${cover}">` : `<div class="thumb" style="background:linear-gradient(150deg, ${p.color_primario}, ${p.color_acento});"></div>`}</td>
-      <td><strong>${p.nombre}</strong><br><span class="hint">${p.id}</span></td>
+      <td><strong>${p.nombre}</strong><br><span class="hint">${p.id}${p.prefijo_proforma ? ' · proforma ' + p.prefijo_proforma + '-####' : ''}</span></td>
       <td><span style="display:inline-block;width:16px;height:16px;border-radius:5px;background:${p.color_primario};border:1px solid var(--border);vertical-align:middle;" title="${p.color_primario}"></span></td>
       <td>${p.tipo_financiamiento}</td>
       <td>${p.activo ? 'Sí' : 'No'}</td>
@@ -83,6 +80,7 @@ function editProject(id) {
   document.getElementById('p-tagline').value = p.tagline || '';
   document.getElementById('p-color1').value = p.color_primario;
   document.getElementById('p-color2').value = p.color_acento;
+  document.getElementById('p-prefijo').value = p.prefijo_proforma || '';
   document.getElementById('p-tipo').value = p.tipo_financiamiento;
   document.getElementById('p-reserva').value = p.reserva_pct;
   document.getElementById('p-promesa').value = p.promesa_pct;
@@ -90,8 +88,6 @@ function editProject(id) {
   document.getElementById('p-plazo').value = p.plazo_default_anios;
   document.getElementById('p-multi').checked = p.permite_multi_seleccion;
   document.getElementById('p-desc').checked = p.permite_descuento_manual;
-  document.getElementById('p-desc-monto-wrap').hidden = !p.permite_descuento_manual;
-  document.getElementById('p-desc-monto').value = p.monto_descuento_clic;
   document.getElementById('p-editing-id').value = p.id;
   document.getElementById('p-cancel').hidden = false;
   window.scrollTo({ top: document.getElementById('project-form').offsetTop - 20, behavior: 'smooth' });
@@ -103,7 +99,6 @@ function resetProjectForm() {
   document.getElementById('p-editing-id').value = '';
   document.getElementById('project-form-title').textContent = 'Agregar proyecto nuevo';
   document.getElementById('p-cancel').hidden = true;
-  document.getElementById('p-desc-monto-wrap').hidden = true;
 }
 
 async function toggleProject(id) {
@@ -121,6 +116,7 @@ async function saveProject(e) {
     tagline: document.getElementById('p-tagline').value.trim(),
     color_primario: document.getElementById('p-color1').value,
     color_acento: document.getElementById('p-color2').value,
+    prefijo_proforma: document.getElementById('p-prefijo').value.trim().toUpperCase() || null,
     tipo_financiamiento: document.getElementById('p-tipo').value,
     reserva_pct: parseFloat(document.getElementById('p-reserva').value) || 0,
     promesa_pct: parseFloat(document.getElementById('p-promesa').value) || 0,
@@ -128,7 +124,6 @@ async function saveProject(e) {
     plazo_default_anios: parseInt(document.getElementById('p-plazo').value) || 0,
     permite_multi_seleccion: document.getElementById('p-multi').checked,
     permite_descuento_manual: document.getElementById('p-desc').checked,
-    monto_descuento_clic: parseFloat(document.getElementById('p-desc-monto').value) || 0,
   };
   const coverFile = document.getElementById('p-cover').files[0];
   if (coverFile) payload.cover_url = await uploadMedia(coverFile, `proyectos/${payload.id}`);

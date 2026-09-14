@@ -78,6 +78,7 @@ async function showPicker() {
   document.getElementById('header-actions').innerHTML = `
     <span class="user-pill">${user.email}</span>
     ${isAdmin ? '<a href="admin.html">Administrar</a>' : ''}
+    ${CotizadorAuth.getPuedeVerHistorial() ? '<a href="historial.html">Historial</a>' : ''}
     <button id="logout-btn">Cerrar sesión</button>
   `;
   document.getElementById('logout-btn').onclick = async () => { await CotizadorAuth.logout(); location.reload(); };

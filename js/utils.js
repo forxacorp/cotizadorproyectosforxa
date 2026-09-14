@@ -81,6 +81,38 @@ function showConfirm(message, { confirmLabel = 'Eliminar', cancelLabel = 'Cancel
   });
 }
 
+// Normaliza un teléfono de Ecuador a formato internacional sin '+' (lo que
+// necesita wa.me): admite '0991234567', '+593991234567', '593 99 123 4567', etc.
+function normalizarTelefonoEC(tel) {
+  let d = (tel || '').replace(/[^\d]/g, '');
+  if (!d) return '';
+  if (d.startsWith('593')) return d;
+  if (d.startsWith('0')) return '593' + d.slice(1);
+  if (d.length === 9) return '593' + d; // celular sin el 0 inicial
+  return d; // ya trae otro código de país — se respeta tal cual
+}
+
+function buildWhatsAppUrl(tel, mensaje) {
+  const numero = normalizarTelefonoEC(tel);
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}
+
+// Exporta filas (array de arrays, primera fila = encabezados) a un .csv que
+// Excel/Google Sheets abren directo con doble clic.
+function csvEscape(v) {
+  const s = (v === null || v === undefined) ? '' : String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function descargarCSV(filename, rows) {
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM: acentos correctos en Excel
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 async function uploadMedia(file, folder) {
   const ext = file.name.split('.').pop();
   const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;

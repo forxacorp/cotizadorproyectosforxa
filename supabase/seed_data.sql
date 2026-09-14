@@ -7,11 +7,16 @@
 -- tarjeta del picker, en el banner de su cotizador y en botones/precios de
 -- esa página) para que se distingan claramente entre sí, en vez de compartir
 -- casi el mismo tono oliva los cuatro.
-insert into public.cotizador_proyectos (id, nombre, tagline, ubicacion, color_primario, color_acento, tipo_financiamiento, reserva_pct, promesa_pct, tasa_default, plazo_default_anios, permite_descuento_manual, monto_descuento_clic, permite_multi_seleccion, sort_order) values
-  ('misicata', 'Mirador de Misicata', 'Condominio privado · Sector Antenas de Misicata, Cuenca', 'Cuenca, Ecuador', '#43573a', '#c9bb8e', 'vip_fijo', 0.05, 0, 4.87, 25, true, 500, true, 1),
-  ('aura', 'AURA', 'Edificio residencial Ordóñez Lasso', 'Cuenca, Ecuador', '#2d3b52', '#aac3d8', 'simulacion', 0.02, 0.08, 10.5, 20, false, 0, false, 2),
-  ('alabes', 'Álabes', 'Suites, departamentos y locales comerciales · Calle del Batán', 'Cuenca, Ecuador', '#6a3226', '#e2ba86', 'simulacion', 0.02, 0.08, 10.5, 20, false, 0, true, 3),
-  ('porton', 'Portón del Valle', 'Lotes y desarrollo residencial · Valle de Yunguilla', 'Yunguilla, Ecuador', '#7c5a2c', '#ddc99a', 'lote', 0.1, 0, 0, 0, false, 0, false, 4)
+-- tipo_financiamiento 'cuotas_entrega' (Misicata/AURA/Álabes): reserva 2% +
+-- promesa 8% + cuotas hasta la entrega (20%, las define el asesor) = 30% de
+-- abono; el 70% restante se financia con interés/plazo editables.
+-- 'pago_directo' (Portón, ya listo para entrega): un solo abono editable
+-- (reserva_pct se reutiliza como % de abono sugerido, 30%) + el mismo 70%.
+insert into public.cotizador_proyectos (id, nombre, tagline, ubicacion, color_primario, color_acento, tipo_financiamiento, prefijo_proforma, reserva_pct, promesa_pct, tasa_default, plazo_default_anios, permite_descuento_manual, monto_descuento_clic, permite_multi_seleccion, sort_order) values
+  ('misicata', 'Mirador de Misicata', 'Condominio privado · Sector Antenas de Misicata, Cuenca', 'Cuenca, Ecuador', '#43573a', '#c9bb8e', 'cuotas_entrega', 'MIS', 0.02, 0.08, 10.5, 20, true, 0, true, 1),
+  ('aura', 'AURA', 'Edificio residencial Ordóñez Lasso', 'Cuenca, Ecuador', '#2d3b52', '#aac3d8', 'cuotas_entrega', 'AURA', 0.02, 0.08, 10.5, 20, false, 0, false, 2),
+  ('alabes', 'Álabes', 'Suites, departamentos y locales comerciales · Calle del Batán', 'Cuenca, Ecuador', '#6a3226', '#e2ba86', 'cuotas_entrega', 'ALB', 0.02, 0.08, 10.5, 20, false, 0, true, 3),
+  ('porton', 'Portón del Valle', 'Lotes y desarrollo residencial · Valle de Yunguilla', 'Yunguilla, Ecuador', '#7c5a2c', '#ddc99a', 'pago_directo', 'PDV', 0.30, 0, 10.5, 20, false, 0, false, 4)
 on conflict (id) do update set
   nombre=excluded.nombre, tagline=excluded.tagline, ubicacion=excluded.ubicacion,
   color_primario=excluded.color_primario, color_acento=excluded.color_acento;

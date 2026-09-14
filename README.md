@@ -25,20 +25,81 @@ esos pasos.** Para aplicar esta entrega:
 2. **Agrega el logo de cada proyecto** en `assets/logos/` (ver "Rediseño de
    la proforma" abajo) — sin esto, la proforma sigue funcionando pero solo
    muestra el logo de FORXA en el membrete, sin el del proyecto.
-3. **Corre `supabase/update_colores_proyecto.sql`** una vez en el SQL Editor
-   de Supabase, si todavía no lo hiciste en una entrega anterior. Le da a
-   cada proyecto (Misicata, AURA, Álabes, Portón) un color distinto y propio
-   para su tarjeta/banner — no afecta a la proforma, que ahora usa siempre
-   el azul de marca FORXA (ver abajo).
-4. **Si las portadas de los proyectos o las fichas de las unidades todavía no
+3. **Corre `supabase/update_financiamiento_v2.sql`** una vez en el SQL Editor
+   de Supabase — **este paso es obligatorio** para la entrega actual (número
+   de proforma, historial restringido, y el nuevo esquema de financiamiento
+   30%/70%). Sin correrlo, el sitio actualizado no va a poder generar
+   proformas (le van a faltar columnas/función que este archivo crea). Ver el
+   detalle en "Número de proforma, historial y financiamiento" más abajo.
+4. **Corre `supabase/update_colores_proyecto.sql`** una vez en el SQL Editor,
+   si todavía no lo hiciste en una entrega anterior. Le da a cada proyecto
+   (Misicata, AURA, Álabes, Portón) un color distinto y propio para su
+   tarjeta/banner — no afecta a la proforma, que usa siempre el azul de marca
+   FORXA.
+5. **Si las portadas de los proyectos o las fichas de las unidades todavía no
    se ven**, es porque `scripts/bulk_upload_fotos.mjs` (Paso 3 abajo)
    todavía no se ha corrido contra tu proyecto de Supabase — no es un error
    de código, es que esas imágenes viven en Supabase Storage y hay que
    subirlas una vez con tu `service_role key`. Corre ese paso y aparecerán.
 
-Esta entrega **no cambia nada en Supabase** (ni tablas ni columnas nuevas) —
-solo son archivos del sitio (HTML/CSS/JS) más los 4 logos que debes agregar
-en `assets/logos/`.
+## Número de proforma, historial y financiamiento (esta entrega)
+
+**Qué cambia y por qué corre en Supabase:** a diferencia de la entrega
+anterior (solo diseño), esta sí necesita `supabase/update_financiamiento_v2.sql`
+porque agrega tablas/columnas nuevas — es igual de seguro (usa
+`if not exists`, se puede correr más de una vez), pero no es opcional.
+
+- **Número de proforma automático**: cada proforma generada ahora trae un
+  número único (ej. `AURA-0007`), generado por la base de datos (no se puede
+  repetir aunque dos asesores generen al mismo tiempo). El prefijo de cada
+  proyecto (`MIS`, `AURA`, `ALB`, `PDV`) se configura en **Administrar →
+  Proyectos → editar → Prefijo de proforma**, y ya viene precargado para los
+  4 proyectos actuales al correr el SQL.
+- **Historial de proformas (pantalla nueva, acceso restringido)**: en
+  `historial.html` (aparece como enlace "Historial" en el menú, pero **solo
+  para una cuenta**) puedes ver, filtrar (por proyecto, cliente/asesor, rango
+  de fechas) y exportar a CSV todas las proformas generadas por cualquier
+  asesor. El resto de asesores sigue generando proformas normalmente, pero no
+  puede ver el historial de nadie — el `update_financiamiento_v2.sql` le da
+  ese acceso a **`ceo@forxainmobiliaria.com`** (línea 5 del archivo: cambia
+  ese correo antes de correrlo si quieres dárselo a otra cuenta, o corre esto
+  después para agregar a alguien más):
+  ```sql
+  insert into public.cotizador_admins (user_id, nombre, puede_ver_historial)
+  select id, 'Nombre', true from auth.users where email = 'otro-correo@forxa.com'
+  on conflict (user_id) do update set puede_ver_historial = true;
+  ```
+  Esta restricción funciona a nivel de base de datos (no solo ocultando el
+  botón), así que aunque alguien intente consultar la tabla directamente con
+  su sesión, no va a poder ver los datos de clientes de otros asesores.
+- **Descuento por negociación**: ya no es "+ / − por clics de $500"; ahora el
+  asesor escribe el monto exacto que negoció, en un solo campo. Sigue
+  controlado por el interruptor "Permite descuento manual" de cada proyecto
+  en el panel.
+- **Nuevo esquema de financiamiento — Misicata, AURA y Álabes**: reserva 2%
+  + promesa 8% (automáticas) + cuotas hasta la entrega (el asesor pone
+  número de cuotas y monto por cuota; el sitio avisa, sin bloquear, si no
+  cuadra con la meta de referencia del 20%) = 30% a abonar antes de la
+  entrega. El 70% restante queda como "Monto a financiar", con interés anual
+  y plazo editables por el asesor, y la cuota mensual estimada resaltada.
+- **Portón del Valle (ya listo para entrega)**: en vez del desglose por
+  pasos, es un solo campo de "Abono antes de la entrega" (USD, sugerido 30%
+  del precio pero editable), más el mismo 70% financiado con interés/plazo
+  editables.
+- **Google Sheets**: se evaluó, pero se descartó a favor del historial de
+  arriba — un sitio sin servidor propio solo puede "empujar" datos a Sheets
+  sin poder confirmar que llegaron bien (si falla, nadie se entera). El
+  historial vive en la misma base de datos que ya usa el cotizador, así que
+  nunca se pierde un dato, y desde ahí lo exportas a CSV (se abre directo en
+  Excel o Google Sheets) cuando lo necesites.
+- **Botón "Enviar por WhatsApp"**: aparece junto a "Imprimir / Guardar PDF"
+  en la proforma, solo si el cliente tiene teléfono registrado. Abre WhatsApp
+  (web o app) con un mensaje profesional ya redactado — con el nombre del
+  asesor, el proyecto, la unidad, el precio final y el número de proforma —
+  que el asesor puede revisar/editar antes de enviarlo (el botón no envía
+  nada automáticamente). **Importante**: WhatsApp no permite adjuntar
+  archivos desde un enlace como este, así que el asesor todavía debe adjuntar
+  el PDF de la proforma manualmente dentro de la conversación.
 
 El resto de este README describe el proceso completo desde cero (útil si
 alguna vez necesitas volver a montarlo).
@@ -87,25 +148,28 @@ por completo, con inspiración en una factura/invoice profesional:
 ├── index.html            → login + selección de proyecto (portadas)
 ├── cotizador.html         → selección de unidad(es) + proforma
 ├── admin.html              → panel de administración (solo admins)
+├── historial.html           → (nuevo) historial de proformas — acceso restringido a 1 cuenta
 ├── css/styles.css
 ├── assets/
 │   ├── logo.png            → logo FORXA (ya existente)
 │   ├── logo-white.png       → logo FORXA en blanco, para el banner de la portada
-│   └── logos/                 → (nuevo) logo de cada proyecto, para el membrete de la proforma
+│   └── logos/                 → logo de cada proyecto, para el membrete de la proforma
 │       ├── misicata.png
 │       ├── aura.png
 │       ├── alabes.png
 │       └── porton.png
 ├── js/
 │   ├── supabase-client.js   → URL + anon key (misma que el portafolio)
-│   ├── auth.js                → login/logout + verificación de admin
-│   ├── utils.js                 → formato de moneda, cuotas, URLs firmadas
+│   ├── auth.js                → login/logout + verificación de admin/historial
+│   ├── utils.js                 → formato de moneda, cuotas, URLs firmadas, WhatsApp, CSV
 │   ├── cotizador.js               → motor genérico (sirve para los 4 proyectos)
-│   └── admin.js                    → CRUD de proyectos y unidades
+│   ├── admin.js                     → CRUD de proyectos y unidades
+│   └── historial.js                   → (nuevo) tabla/filtros/export del historial
 ├── supabase/
-│   ├── schema.sql                    → tablas, RLS, bucket privado
-│   ├── seed_data.sql                 → los 4 proyectos + ~120 unidades ya cargadas
-│   └── update_colores_proyecto.sql   → (nuevo) da un color propio a cada proyecto ya existente
+│   ├── schema.sql                            → tablas, RLS, bucket privado (ya incluye lo nuevo)
+│   ├── seed_data.sql                         → los 4 proyectos + ~120 unidades ya cargadas
+│   ├── update_colores_proyecto.sql           → da un color propio a cada proyecto ya existente
+│   └── update_financiamiento_v2.sql          → (nuevo, obligatorio) número de proforma, historial, 30%/70%
 ├── fotos/                 → fichas extraídas de los brochures (para subir una vez)
 └── scripts/bulk_upload_fotos.mjs → sube fotos/ a Supabase Storage de un tirón
 ```

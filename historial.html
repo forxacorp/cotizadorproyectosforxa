@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historial de proformas — FORXA</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128203;</text></svg>">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="internal-bar no-print">Historial de proformas · acceso restringido</div>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.png" alt="FORXA Inmobiliaria" onerror="this.style.display='none'">
+      <span class="brand-text"><strong>FORXA</strong><span>Historial de proformas</span></span>
+    </a>
+    <div class="header-actions" id="header-actions"></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:28px;padding-bottom:110px;">
+
+  <div id="sin-permisos" hidden></div>
+
+  <div id="historial-content" hidden>
+    <div class="card">
+      <h3>Filtros</h3>
+      <div class="row2">
+        <div class="field"><label>Proyecto</label>
+          <select id="f-proyecto"><option value="">Todos los proyectos</option></select>
+        </div>
+        <div class="field"><label>Buscar (cliente o asesor)</label>
+          <input type="text" id="f-buscar" placeholder="Nombre del cliente o asesor…">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Desde</label><input type="date" id="f-desde"></div>
+        <div class="field"><label>Hasta</label><input type="date" id="f-hasta"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost btn-sm" id="f-limpiar">Limpiar filtros</button>
+        <button type="button" class="btn btn-primary btn-sm" id="f-exportar">Exportar a CSV</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Proformas generadas</h3>
+      <p class="hint" id="historial-contador" style="margin-bottom:12px;"></p>
+      <div id="historial-list" class="admin-table-wrap"><div class="empty-state">Cargando…</div></div>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/historial.js"></script>
+</body>
+</html>

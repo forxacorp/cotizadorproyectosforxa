@@ -18,6 +18,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.cotizador_admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
   nombre text,
+  puede_ver_historial boolean not null default false, -- acceso al Historial de proformas (aparte de administrar proyectos/unidades)
   created_at timestamptz not null default now()
 );
 alter table public.cotizador_admins enable row level security;
@@ -43,7 +44,8 @@ create table if not exists public.cotizador_proyectos (
   color_primario text not null default '#565a41',
   color_acento text not null default '#cdbd94',
   cover_url text,
-  tipo_financiamiento text not null default 'simulacion', -- 'vip_fijo' | 'simulacion' | 'lote'
+  tipo_financiamiento text not null default 'simulacion', -- 'cuotas_entrega' | 'pago_directo' | 'vip_fijo' | 'simulacion' | 'lote'
+  prefijo_proforma text, -- ej. 'AURA' — usado por siguiente_numero_proforma() para el número de proforma (AURA-0001)
   reserva_pct numeric not null default 0.02,
   promesa_pct numeric not null default 0.08,
   tasa_default numeric not null default 10.5,
@@ -141,9 +143,16 @@ create policy "Admins escriben inventario extra"
   with check (exists (select 1 from public.cotizador_admins a where a.user_id = auth.uid()));
 
 -- 5) Historial de proformas (reemplaza el localStorage del HTML original) ---
+-- Nota: cualquier asesor puede INSERTAR (generar proformas), pero solo puede
+-- LEER el historial completo quien tenga puede_ver_historial = true en
+-- cotizador_admins (ver política más abajo) — es información comercial/de
+-- clientes que no todos los asesores deben poder consultar.
 create table if not exists public.cotizador_historial (
   id uuid primary key default gen_random_uuid(),
+  numero_proforma text unique,             -- ej. 'AURA-0007', generado por siguiente_numero_proforma()
   creado_por uuid references auth.users(id),
+  asesor_nombre text,
+  asesor_telefono text,
   proyecto_id text references public.cotizador_proyectos(id),
   cliente_nombre text,
   cliente_telefono text,
@@ -152,6 +161,13 @@ create table if not exists public.cotizador_historial (
   descuento numeric not null default 0,
   precio_final numeric,
   reserva numeric,
+  promesa numeric,
+  abono_total numeric,        -- total abonado antes de la entrega (reserva+promesa+cuotas, o el abono único de Portón)
+  monto_financiado numeric,   -- saldo que queda a crédito (el ~70%)
+  tasa_usada numeric,
+  plazo_anios_usado integer,
+  numero_cuotas integer,      -- solo cuotas_entrega
+  monto_cuota numeric,        -- solo cuotas_entrega
   saldo_financiar numeric,
   cuota_mensual numeric,
   notas text,
@@ -160,13 +176,58 @@ create table if not exists public.cotizador_historial (
 alter table public.cotizador_historial enable row level security;
 
 drop policy if exists "Autenticados leen historial" on public.cotizador_historial;
-create policy "Autenticados leen historial"
-  on public.cotizador_historial for select to authenticated using (true);
+drop policy if exists "Solo quien tiene permiso lee historial" on public.cotizador_historial;
+create policy "Solo quien tiene permiso lee historial"
+  on public.cotizador_historial for select to authenticated
+  using (exists (
+    select 1 from public.cotizador_admins a
+    where a.user_id = auth.uid() and a.puede_ver_historial = true
+  ));
 
 drop policy if exists "Autenticados guardan su historial" on public.cotizador_historial;
 create policy "Autenticados guardan su historial"
   on public.cotizador_historial for insert to authenticated
   with check (creado_por = auth.uid());
+
+-- 5b) Contador de número de proforma (uno por proyecto) + función atómica ---
+create table if not exists public.cotizador_contador_proforma (
+  proyecto_id text primary key references public.cotizador_proyectos(id) on delete cascade,
+  ultimo integer not null default 0
+);
+alter table public.cotizador_contador_proforma enable row level security;
+
+drop policy if exists "Autenticados usan el contador" on public.cotizador_contador_proforma;
+create policy "Autenticados usan el contador"
+  on public.cotizador_contador_proforma for all to authenticated
+  using (true) with check (true);
+
+create or replace function public.siguiente_numero_proforma(p_proyecto_id text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_prefijo text;
+  v_siguiente integer;
+begin
+  select coalesce(prefijo_proforma, upper(left(id, 3))) into v_prefijo
+  from public.cotizador_proyectos where id = p_proyecto_id;
+
+  if v_prefijo is null then
+    v_prefijo := upper(left(p_proyecto_id, 3));
+  end if;
+
+  insert into public.cotizador_contador_proforma (proyecto_id, ultimo)
+  values (p_proyecto_id, 1)
+  on conflict (proyecto_id) do update set ultimo = cotizador_contador_proforma.ultimo + 1
+  returning ultimo into v_siguiente;
+
+  return v_prefijo || '-' || lpad(v_siguiente::text, 4, '0');
+end;
+$$;
+
+grant execute on function public.siguiente_numero_proforma(text) to authenticated;
 
 drop policy if exists "Admins borran historial" on public.cotizador_historial;
 create policy "Admins borran historial"
