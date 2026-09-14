@@ -138,6 +138,9 @@ img { max-width: 100%; display: block; }
 .field textarea { resize: vertical; min-height: 76px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
+.phone-row { display: grid; grid-template-columns: 130px 1fr; gap: 8px; }
+.phone-row select { padding-left: 10px; padding-right: 4px; }
+@media (max-width: 480px) { .phone-row { grid-template-columns: 108px 1fr; } }
 .status-banner {
   font-size: 13px; padding: 10px 14px; border-radius: var(--radius-sm);
   margin-bottom: 16px; display: none;

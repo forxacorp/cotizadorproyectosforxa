@@ -47,20 +47,25 @@ async function boot() {
 // El asesor llena su nombre/teléfono una vez y queda recordado en este
 // navegador (localStorage), para no volver a escribirlo en cada proforma.
 function loadAsesorGuardado() {
+  let savedCode = '593', nombre = '', tel = '', empresa = 'forxa';
   try {
-    const nombre = localStorage.getItem('forxa_asesor_nombre');
-    const tel = localStorage.getItem('forxa_asesor_tel');
-    const empresa = localStorage.getItem('forxa_asesor_empresa');
-    if (nombre) qs('asesor-nombre').value = nombre;
-    if (tel) qs('asesor-tel').value = tel;
-    qs('asesor-empresa').value = empresa || 'forxa'; // por defecto FORXA (colaboradores de siempre)
+    savedCode = localStorage.getItem('forxa_asesor_tel_code') || '593';
+    nombre = localStorage.getItem('forxa_asesor_nombre') || '';
+    tel = localStorage.getItem('forxa_asesor_tel') || '';
+    empresa = localStorage.getItem('forxa_asesor_empresa') || 'forxa';
   } catch (e) { /* localStorage puede fallar en modo privado; no es crítico */ }
+  poblarSelectorPais(qs('asesor-tel-code'), savedCode);
+  poblarSelectorPais(qs('cli-tel-code'), '593'); // el cliente cambia en cada proforma; Ecuador por defecto
+  if (nombre) qs('asesor-nombre').value = nombre;
+  if (tel) qs('asesor-tel').value = tel;
+  qs('asesor-empresa').value = empresa;
 }
-function guardarAsesor(nombre, tel, empresa) {
+function guardarAsesor(nombre, tel, empresa, telCode) {
   try {
     localStorage.setItem('forxa_asesor_nombre', nombre);
     localStorage.setItem('forxa_asesor_tel', tel);
     localStorage.setItem('forxa_asesor_empresa', empresa);
+    localStorage.setItem('forxa_asesor_tel_code', telCode);
   } catch (e) { /* no crítico */ }
 }
 
@@ -177,19 +182,38 @@ function getDescuento() {
   return Math.max(0, parseFloat(qs('desc-monto')?.value) || 0);
 }
 
+// Reserva y promesa parten del % configurado en el proyecto, pero el asesor
+// puede editarlos caso a caso (ej. negociaciones especiales) — si el campo
+// existe en el formulario actual se usa ese valor, si no, el % del proyecto.
+function getReservaPct() {
+  const inp = qs('f-reserva-pct');
+  if (inp && inp.value !== '') return Math.max(0, parseFloat(inp.value) || 0) / 100;
+  return PROYECTO.reserva_pct;
+}
+function getPromesaPct() {
+  const inp = qs('f-promesa-pct');
+  if (inp && inp.value !== '') return Math.max(0, parseFloat(inp.value) || 0) / 100;
+  return PROYECTO.promesa_pct;
+}
+
 function renderFinancingFields() {
   const el = qs('financing-fields');
   const tipo = PROYECTO.tipo_financiamiento;
 
   if (tipo === 'cuotas_entrega') {
-    // Reserva (2%) y promesa (8%) son automáticas según el proyecto; el
-    // asesor solo define en cuántas cuotas se paga el 20% restante hasta la
-    // entrega — el monto de cada cuota se calcula solo (20% ÷ N cuotas), no
-    // hay que escribirlo ni puede quedar descuadrado.
+    // Reserva y promesa parten de un % sugerido por el proyecto, pero quedan
+    // editables (ej. negociaciones especiales); el asesor solo define en
+    // cuántas cuotas se paga el resto hasta la entrega — el monto de cada
+    // cuota se calcula solo, no hay que escribirlo ni puede quedar
+    // descuadrado.
     el.innerHTML = `
       <p class="hint" style="margin-bottom:14px;">
-        Reserva (${(PROYECTO.reserva_pct * 100).toFixed(0)}%), promesa de compraventa (${(PROYECTO.promesa_pct * 100).toFixed(0)}%) y el monto de cada cuota se calculan automáticamente.
+        Reserva, promesa de compraventa y el monto de cada cuota se calculan automáticamente. Los % de reserva y promesa se pueden ajustar si la negociación lo requiere.
       </p>
+      <div class="row2">
+        <div class="field"><label>Reserva (%)</label><input type="number" id="f-reserva-pct" min="0" step="0.1" value="${(PROYECTO.reserva_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
+        <div class="field"><label>Promesa de compraventa (%)</label><input type="number" id="f-promesa-pct" min="0" step="0.1" value="${(PROYECTO.promesa_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
+      </div>
       <div class="field" style="max-width:260px;"><label>Número de cuotas hasta la entrega</label><input type="number" id="f-num-cuotas" min="0" step="1" value="0"></div>
       <div class="row2">
         <div class="field"><label>Interés anual del financiamiento (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
@@ -207,17 +231,23 @@ function renderFinancingFields() {
       <div class="field" style="max-width:260px;"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>`;
   } else if (tipo === 'vip_fijo') {
     el.innerHTML = `
+      <div class="field" style="max-width:260px;"><label>Reserva (%)</label><input type="number" id="f-reserva-pct" min="0" step="0.1" value="${(PROYECTO.reserva_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
       <div class="field"><label>Pagos al capital durante construcción (USD) — sin interés</label>
         <input type="number" id="f-capital" min="0" value="0"></div>`;
   } else if (tipo === 'simulacion') {
     el.innerHTML = `
+      <div class="row2">
+        <div class="field"><label>Reserva (%)</label><input type="number" id="f-reserva-pct" min="0" step="0.1" value="${(PROYECTO.reserva_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
+        <div class="field"><label>Promesa de compraventa (%)</label><input type="number" id="f-promesa-pct" min="0" step="0.1" value="${(PROYECTO.promesa_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
+      </div>
       <div class="row2">
         <div class="field"><label>Cuotas a capital (USD, opcional)</label><input type="number" id="f-capital" min="0" value="0"></div>
         <div class="field"><label>Tasa anual simulada (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
       </div>
       <div class="field"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>`;
   } else {
-    el.innerHTML = `<p class="hint">Lote: entrada de ${(PROYECTO.reserva_pct * 100).toFixed(0)}% + saldo a coordinar directamente con el fideicomiso.</p>`;
+    el.innerHTML = `<div class="field" style="max-width:260px;"><label>Entrada (%)</label><input type="number" id="f-reserva-pct" min="0" step="0.1" value="${(PROYECTO.reserva_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
+      <p class="hint">Lote: entrada + saldo a coordinar directamente con el fideicomiso.</p>`;
   }
   el.querySelectorAll('input').forEach(inp => inp.addEventListener('input', renderFinancingSummary));
 }
@@ -228,16 +258,19 @@ function calcularPlan(unidad) {
   const tipo = PROYECTO.tipo_financiamiento;
 
   if (tipo === 'cuotas_entrega') {
-    const reserva = precioFinal * PROYECTO.reserva_pct;
-    const promesa = precioFinal * PROYECTO.promesa_pct;
+    const reservaPct = getReservaPct();
+    const promesaPct = getPromesaPct();
+    const reserva = precioFinal * reservaPct;
+    const promesa = precioFinal * promesaPct;
     const numCuotas = parseInt(qs('f-num-cuotas')?.value) || 0;
     // Reserva + promesa + cuotas = 30% del precio (el 70% restante se
     // financia). Las cuotas cubren lo que falta del 30% después de la
-    // reserva y la promesa (2% + 8% = 10% → cuotas = 20%) — se reparte entre
-    // el número de cuotas que ponga el asesor, así el monto de cada cuota
-    // sale solo y nunca puede quedar descuadrado con esa meta.
+    // reserva y la promesa (por defecto 2% + 8% = 10% → cuotas = 20%, pero
+    // ambos % son editables) — se reparte entre el número de cuotas que
+    // ponga el asesor, así el monto de cada cuota sale solo y nunca puede
+    // quedar descuadrado con esa meta.
     const ABONO_TOTAL_PCT = 0.30;
-    const cuotasTotal = precioFinal * Math.max(0, ABONO_TOTAL_PCT - PROYECTO.reserva_pct - PROYECTO.promesa_pct);
+    const cuotasTotal = precioFinal * Math.max(0, ABONO_TOTAL_PCT - reservaPct - promesaPct);
     const montoCuota = numCuotas > 0 ? cuotasTotal / numCuotas : 0;
     const abonoTotal = reserva + promesa + (numCuotas > 0 ? cuotasTotal : 0);
     const montoFinanciado = Math.max(0, precioFinal - abonoTotal);
@@ -266,7 +299,7 @@ function calcularPlan(unidad) {
 
   const capital = parseFloat(qs('f-capital')?.value) || 0;
   if (tipo === 'vip_fijo') {
-    const reserva = precioFinal * PROYECTO.reserva_pct;
+    const reserva = precioFinal * getReservaPct();
     const saldo = Math.max(0, precioFinal - reserva - capital);
     const cuota25 = calcCuota(saldo, PROYECTO.tasa_default, PROYECTO.plazo_default_anios * 12);
     const cuota20 = calcCuota(saldo, PROYECTO.tasa_default, 20 * 12);
@@ -274,8 +307,8 @@ function calcularPlan(unidad) {
     return { desc, precioFinal, reserva, promesa: 0, capital, saldo, cuota: cuota25, cuota20, cuota15, aplicaCredito: unidad.raw?.aplica_vip };
   }
   if (tipo === 'simulacion') {
-    const reserva = precioFinal * PROYECTO.reserva_pct;
-    const promesa = precioFinal * PROYECTO.promesa_pct;
+    const reserva = precioFinal * getReservaPct();
+    const promesa = precioFinal * getPromesaPct();
     const saldo = Math.max(0, precioFinal - reserva - promesa - capital);
     const tasa = parseFloat(qs('f-tasa')?.value) || PROYECTO.tasa_default;
     const plazo = parseFloat(qs('f-plazo')?.value) || PROYECTO.plazo_default_anios;
@@ -283,7 +316,7 @@ function calcularPlan(unidad) {
     return { desc, precioFinal, reserva, promesa, capital, saldo, cuota, tasa, plazo, aplicaCredito: true };
   }
   // lote
-  const reserva = precioFinal * PROYECTO.reserva_pct;
+  const reserva = precioFinal * getReservaPct();
   const saldo = Math.max(0, precioFinal - reserva);
   return { desc, precioFinal, reserva, promesa: 0, capital: 0, saldo, cuota: 0, aplicaCredito: false };
 }
@@ -371,14 +404,18 @@ function buildWhatsAppMessage({ numeroProforma, asesorNombre, asesorEmpresa, cli
 async function generarProforma() {
   if (!seleccionadas.length) { showToast('Selecciona al menos una unidad.'); return; }
   const asesorNombre = qs('asesor-nombre').value.trim();
-  const asesorTel = qs('asesor-tel').value.trim();
+  const asesorTelCode = qs('asesor-tel-code').value;
+  const asesorTelLocal = qs('asesor-tel').value.trim();
   const asesorEmpresa = qs('asesor-empresa').value;
-  if (!asesorNombre || !asesorTel) { showToast('Ingresa tu nombre y teléfono de asesor.'); return; }
+  if (!asesorNombre || !asesorTelLocal) { showToast('Ingresa tu nombre y teléfono de asesor.'); return; }
   const nombre = qs('cli-nombre').value.trim();
   if (!nombre) { showToast('Ingresa el nombre del cliente.'); return; }
-  guardarAsesor(asesorNombre, asesorTel, asesorEmpresa);
+  guardarAsesor(asesorNombre, asesorTelLocal, asesorEmpresa, asesorTelCode);
+  const asesorTel = formatTelefono(asesorTelCode, asesorTelLocal); // ej. '+593 991234567', para mostrar
 
-  const tel = qs('cli-tel').value.trim();
+  const telCode = qs('cli-tel-code').value;
+  const telLocal = qs('cli-tel').value.trim();
+  const tel = telLocal ? formatTelefono(telCode, telLocal) : '';
   const email = qs('cli-email').value.trim();
   const notas = qs('notas').value.trim();
   const hoy = new Date();

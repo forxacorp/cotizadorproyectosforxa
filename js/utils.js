@@ -81,19 +81,63 @@ function showConfirm(message, { confirmLabel = 'Eliminar', cancelLabel = 'Cancel
   });
 }
 
-// Normaliza un teléfono de Ecuador a formato internacional sin '+' (lo que
-// necesita wa.me): admite '0991234567', '+593991234567', '593 99 123 4567', etc.
-function normalizarTelefonoEC(tel) {
-  let d = (tel || '').replace(/[^\d]/g, '');
+// Códigos telefónicos de país más frecuentes entre clientes y asesores de
+// FORXA (Ecuador primero por ser el mercado principal). El asesor elige el
+// país en un selector y solo escribe el número local — sin tener que
+// recordar ni tipear el "+593" (u otro) a mano.
+const PAISES_TEL = [
+  { code: '593', name: 'Ecuador' },
+  { code: '1', name: 'Estados Unidos / Canadá' },
+  { code: '57', name: 'Colombia' },
+  { code: '51', name: 'Perú' },
+  { code: '58', name: 'Venezuela' },
+  { code: '56', name: 'Chile' },
+  { code: '54', name: 'Argentina' },
+  { code: '52', name: 'México' },
+  { code: '507', name: 'Panamá' },
+  { code: '34', name: 'España' },
+  { code: '44', name: 'Reino Unido' },
+  { code: '39', name: 'Italia' },
+  { code: '49', name: 'Alemania' },
+  { code: '33', name: 'Francia' },
+  { code: '351', name: 'Portugal' },
+  { code: '506', name: 'Costa Rica' },
+  { code: '502', name: 'Guatemala' },
+  { code: '503', name: 'El Salvador' },
+  { code: '504', name: 'Honduras' },
+  { code: '505', name: 'Nicaragua' },
+  { code: '598', name: 'Uruguay' },
+  { code: '595', name: 'Paraguay' },
+  { code: '591', name: 'Bolivia' },
+  { code: '55', name: 'Brasil' },
+];
+
+function poblarSelectorPais(selectEl, codigoSeleccionado = '593') {
+  if (!selectEl) return;
+  selectEl.innerHTML = PAISES_TEL.map(p => `<option value="${p.code}">+${p.code} ${p.name}</option>`).join('');
+  selectEl.value = codigoSeleccionado;
+}
+
+// Combina código de país + número local en el formato internacional que
+// necesita wa.me (solo dígitos, sin '+'). Quita el 0 inicial típico de los
+// números locales (ej. '0991234567' -> '991234567').
+function normalizarTelefono(codigoPais, numeroLocal) {
+  let d = (numeroLocal || '').replace(/[^\d]/g, '');
   if (!d) return '';
-  if (d.startsWith('593')) return d;
-  if (d.startsWith('0')) return '593' + d.slice(1);
-  if (d.length === 9) return '593' + d; // celular sin el 0 inicial
-  return d; // ya trae otro código de país — se respeta tal cual
+  if (d.startsWith('0')) d = d.slice(1);
+  return (codigoPais || '593') + d;
+}
+
+// Versión legible para mostrar en la proforma y el historial (ej. '+593 991234567').
+function formatTelefono(codigoPais, numeroLocal) {
+  let d = (numeroLocal || '').replace(/[^\d]/g, '');
+  if (!d) return '';
+  if (d.startsWith('0')) d = d.slice(1);
+  return `+${codigoPais || '593'} ${d}`;
 }
 
 function buildWhatsAppUrl(tel, mensaje) {
-  const numero = normalizarTelefonoEC(tel);
+  const numero = (tel || '').replace(/[^\d]/g, '');
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 

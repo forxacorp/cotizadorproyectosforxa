@@ -63,7 +63,7 @@ function wireFiltros() {
     document.getElementById('f-hasta').value = '';
     cargarHistorial();
   };
-  document.getElementById('f-exportar').onclick = exportarCSV;
+  document.getElementById('f-exportar').onclick = exportarExcel;
 }
 
 let debounceTimer = null;
@@ -130,39 +130,122 @@ function filaHTML(f) {
   </tr>`;
 }
 
-// CSV pensado para importar a un CRM (Zolutium u otro): un valor atómico por
-// columna (nada de texto combinado tipo "5 cuotas de $3000"), fechas en
-// formato ISO sin ambigüedad, montos como número plano (sin '$' ni comas de
-// miles, para que no se importen como texto), y sin saltos de línea dentro
-// de una celda (Notas los reemplaza por ' / ') para que ningún importador
-// los interprete como filas nuevas. El cliente va primero porque es
-// normalmente el campo que un CRM usa para crear/emparejar el contacto.
+// Excel (.xlsx) pensado para importar a un CRM (Zolutium u otro) y, a la
+// vez, legible para revisar a simple vista en Excel/Sheets: encabezado fijo
+// y en negrita, columnas con ancho propio, montos con formato de moneda,
+// fecha como fecha real (ordenable) y filtro automático en el encabezado.
+// El valor guardado en cada celda sigue siendo un número/fecha plano (no
+// texto con '$' ni comas), así que cualquier importador de CRM lo sigue
+// leyendo igual que antes — el formato es solo visual.
 function num2(n) {
   return (n === null || n === undefined || n === '') ? '' : Math.round(Number(n) * 100) / 100;
 }
-function exportarCSV() {
+
+const EXPORT_COLUMNAS = [
+  { header: 'Cliente - Nombre completo', key: 'clienteNombre', width: 24 },
+  { header: 'Cliente - Teléfono', key: 'clienteTelefono', width: 17 },
+  { header: 'Cliente - Correo', key: 'clienteCorreo', width: 26 },
+  { header: 'Proyecto', key: 'proyecto', width: 20 },
+  { header: 'Unidad(es)', key: 'unidades', width: 22 },
+  { header: 'N.º de proforma', key: 'numeroProforma', width: 15 },
+  { header: 'Fecha', key: 'fecha', width: 12, numFmt: 'dd/mm/yyyy' },
+  { header: 'Asesor - Nombre', key: 'asesorNombre', width: 20 },
+  { header: 'Asesor - Teléfono', key: 'asesorTelefono', width: 17 },
+  { header: 'Precio final (USD)', key: 'precioFinal', width: 15, numFmt: '"$"#,##0.00' },
+  { header: 'Descuento (USD)', key: 'descuento', width: 14, numFmt: '"$"#,##0.00' },
+  { header: 'Reserva (USD)', key: 'reserva', width: 13, numFmt: '"$"#,##0.00' },
+  { header: 'Promesa (USD)', key: 'promesa', width: 13, numFmt: '"$"#,##0.00' },
+  { header: 'Abono total antes de entrega (USD)', key: 'abonoTotal', width: 20, numFmt: '"$"#,##0.00' },
+  { header: 'Monto financiado (USD)', key: 'montoFinanciado', width: 17, numFmt: '"$"#,##0.00' },
+  { header: 'Tasa anual (%)', key: 'tasa', width: 13, numFmt: '0.00"%"' },
+  { header: 'Plazo (años)', key: 'plazo', width: 12 },
+  { header: 'N.º de cuotas', key: 'numCuotas', width: 12 },
+  { header: 'Monto por cuota (USD)', key: 'montoCuota', width: 16, numFmt: '"$"#,##0.00' },
+  { header: 'Cuota mensual estimada (USD)', key: 'cuotaMensual', width: 18, numFmt: '"$"#,##0.00' },
+  { header: 'Notas', key: 'notas', width: 32 },
+];
+
+const EXPORT_COLOR_HEADER = 'FF565A41'; // --olive
+const EXPORT_COLOR_ZEBRA = 'FFF8F6F0';  // --crema
+const EXPORT_COLOR_BORDE = 'FFE4E0D2'; // --border
+
+async function exportarExcel() {
   if (!HISTORIAL.length) { showToast('No hay filas para exportar con estos filtros.'); return; }
-  const headers = [
-    'Cliente - Nombre completo', 'Cliente - Teléfono', 'Cliente - Correo',
-    'Proyecto', 'Unidad(es)', 'Número de proforma', 'Fecha (AAAA-MM-DD)',
-    'Asesor - Nombre', 'Asesor - Teléfono',
-    'Precio final (USD)', 'Descuento (USD)', 'Reserva (USD)', 'Promesa (USD)',
-    'Abono total antes de entrega (USD)', 'Monto financiado (USD)',
-    'Tasa anual (%)', 'Plazo (años)', 'N.º de cuotas', 'Monto por cuota (USD)',
-    'Cuota mensual estimada (USD)', 'Notas',
-  ];
-  const rows = HISTORIAL.map(f => [
-    f.cliente_nombre || '', f.cliente_telefono || '', f.cliente_correo || '',
-    f.cotizador_proyectos?.nombre || f.proyecto_id || '',
-    Array.isArray(f.unidades) ? f.unidades.map(u => u.nombre || u.codigo).join(' / ') : '',
-    f.numero_proforma || '', f.created_at ? new Date(f.created_at).toISOString().slice(0, 10) : '',
-    f.asesor_nombre || '', f.asesor_telefono || '',
-    num2(f.precio_final), num2(f.descuento), num2(f.reserva), num2(f.promesa),
-    num2(f.abono_total), num2(f.monto_financiado), num2(f.tasa_usada), f.plazo_anios_usado ?? '',
-    f.numero_cuotas ?? '', num2(f.monto_cuota), num2(f.cuota_mensual),
-    (f.notas || '').replace(/\r?\n+/g, ' / ').trim(),
-  ]);
-  descargarCSV(`historial-proformas-${new Date().toISOString().slice(0, 10)}.csv`, [headers, ...rows]);
+  if (typeof ExcelJS === 'undefined') {
+    showToast('No se pudo cargar el generador de Excel (revisa tu conexión) e intenta de nuevo.');
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'FORXA Inmobiliaria';
+  wb.created = new Date();
+  const ws = wb.addWorksheet('Historial', { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws.columns = EXPORT_COLUMNAS.map(c => ({ header: c.header, key: c.key, width: c.width }));
+
+  HISTORIAL.forEach(f => {
+    ws.addRow({
+      clienteNombre: f.cliente_nombre || '',
+      clienteTelefono: f.cliente_telefono || '',
+      clienteCorreo: f.cliente_correo || '',
+      proyecto: f.cotizador_proyectos?.nombre || f.proyecto_id || '',
+      unidades: Array.isArray(f.unidades) ? f.unidades.map(u => u.nombre || u.codigo).join(' / ') : '',
+      numeroProforma: f.numero_proforma || '',
+      fecha: f.created_at ? new Date(f.created_at) : null,
+      asesorNombre: f.asesor_nombre || '',
+      asesorTelefono: f.asesor_telefono || '',
+      precioFinal: num2(f.precio_final),
+      descuento: num2(f.descuento),
+      reserva: num2(f.reserva),
+      promesa: num2(f.promesa),
+      abonoTotal: num2(f.abono_total),
+      montoFinanciado: num2(f.monto_financiado),
+      tasa: num2(f.tasa_usada),
+      plazo: f.plazo_anios_usado ?? '',
+      numCuotas: f.numero_cuotas ?? '',
+      montoCuota: num2(f.monto_cuota),
+      cuotaMensual: num2(f.cuota_mensual),
+      notas: (f.notas || '').replace(/\r?\n+/g, ' / ').trim(),
+    });
+  });
+
+  // Formato numérico por columna (moneda/fecha/%) — no afecta el valor real.
+  EXPORT_COLUMNAS.forEach(c => { if (c.numFmt) ws.getColumn(c.key).numFmt = c.numFmt; });
+
+  // Encabezado: fondo oliva de marca, texto blanco en negrita, fijo al
+  // desplazar (freeze pane) y con filtro automático para ordenar/filtrar.
+  const header = ws.getRow(1);
+  header.height = 26;
+  header.eachCell(cell => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXPORT_COLOR_HEADER } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  });
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: EXPORT_COLUMNAS.length } };
+
+  // Filas: borde suave + franjas alternadas para que sea fácil seguir cada
+  // fila con la vista, en vez de una grilla plana sin ningún tipo de guía.
+  ws.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    const zebra = rowNumber % 2 === 0;
+    row.eachCell({ includeEmpty: true }, cell => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: EXPORT_COLOR_BORDE } },
+        bottom: { style: 'thin', color: { argb: EXPORT_COLOR_BORDE } },
+        left: { style: 'thin', color: { argb: EXPORT_COLOR_BORDE } },
+        right: { style: 'thin', color: { argb: EXPORT_COLOR_BORDE } },
+      };
+      if (zebra) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXPORT_COLOR_ZEBRA } };
+      cell.alignment = { ...cell.alignment, vertical: 'middle' };
+    });
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `historial-proformas-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 boot();
