@@ -77,11 +77,12 @@ porque agrega tablas/columnas nuevas — es igual de seguro (usa
   controlado por el interruptor "Permite descuento manual" de cada proyecto
   en el panel.
 - **Nuevo esquema de financiamiento — Misicata, AURA y Álabes**: reserva 2%
-  + promesa 8% (automáticas) + cuotas hasta la entrega (el asesor pone
-  número de cuotas y monto por cuota; el sitio avisa, sin bloquear, si no
-  cuadra con la meta de referencia del 20%) = 30% a abonar antes de la
-  entrega. El 70% restante queda como "Monto a financiar", con interés anual
-  y plazo editables por el asesor, y la cuota mensual estimada resaltada.
+  + promesa 8% (automáticas) + cuotas hasta la entrega = 30% a abonar antes
+  de la entrega; el 70% restante queda como "Monto a financiar", con interés
+  anual y plazo editables por el asesor, y la cuota mensual estimada
+  resaltada. Las cuotas: el asesor solo escribe **el número de cuotas** — el
+  monto de cada una se calcula solo (20% del precio ÷ número de cuotas), así
+  que nunca puede quedar descuadrado con la meta.
 - **Portón del Valle (ya listo para entrega)**: en vez del desglose por
   pasos, es un solo campo de "Abono antes de la entrega" (USD, sugerido 30%
   del precio pero editable), más el mismo 70% financiado con interés/plazo
@@ -90,8 +91,14 @@ porque agrega tablas/columnas nuevas — es igual de seguro (usa
   arriba — un sitio sin servidor propio solo puede "empujar" datos a Sheets
   sin poder confirmar que llegaron bien (si falla, nadie se entera). El
   historial vive en la misma base de datos que ya usa el cotizador, así que
-  nunca se pierde un dato, y desde ahí lo exportas a CSV (se abre directo en
-  Excel o Google Sheets) cuando lo necesites.
+  nunca se pierde un dato, y desde ahí lo exportas a CSV cuando lo
+  necesites — pensado para importarlo a un CRM (Zolutium u otro): un valor
+  por columna, cliente primero, fechas sin ambigüedad y montos como número
+  plano (sin "$" ni comas), sin nada combinado en una misma celda. No
+  encontré documentación pública del formato exacto que pide Zolutium — si
+  tienen una plantilla propia de importación (usualmente se descarga desde
+  el mismo asistente de importar contactos/leads de la plataforma), pásamela
+  y ajusto el CSV para que calce exactamente con sus columnas.
 - **Botón "Enviar por WhatsApp"**: aparece junto a "Imprimir / Guardar PDF"
   en la proforma, solo si el cliente tiene teléfono registrado. Abre WhatsApp
   (web o app) con un mensaje profesional ya redactado — con el nombre del

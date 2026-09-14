@@ -50,14 +50,17 @@ function loadAsesorGuardado() {
   try {
     const nombre = localStorage.getItem('forxa_asesor_nombre');
     const tel = localStorage.getItem('forxa_asesor_tel');
+    const empresa = localStorage.getItem('forxa_asesor_empresa');
     if (nombre) qs('asesor-nombre').value = nombre;
     if (tel) qs('asesor-tel').value = tel;
+    qs('asesor-empresa').value = empresa || 'forxa'; // por defecto FORXA (colaboradores de siempre)
   } catch (e) { /* localStorage puede fallar en modo privado; no es crítico */ }
 }
-function guardarAsesor(nombre, tel) {
+function guardarAsesor(nombre, tel, empresa) {
   try {
     localStorage.setItem('forxa_asesor_nombre', nombre);
     localStorage.setItem('forxa_asesor_tel', tel);
+    localStorage.setItem('forxa_asesor_empresa', empresa);
   } catch (e) { /* no crítico */ }
 }
 
@@ -180,18 +183,14 @@ function renderFinancingFields() {
 
   if (tipo === 'cuotas_entrega') {
     // Reserva (2%) y promesa (8%) son automáticas según el proyecto; el
-    // asesor solo define las cuotas hasta la entrega (meta: 20%) y, para el
-    // saldo a financiar (~70%), la tasa y el plazo.
+    // asesor solo define en cuántas cuotas se paga el 20% restante hasta la
+    // entrega — el monto de cada cuota se calcula solo (20% ÷ N cuotas), no
+    // hay que escribirlo ni puede quedar descuadrado.
     el.innerHTML = `
       <p class="hint" style="margin-bottom:14px;">
-        Reserva (${(PROYECTO.reserva_pct * 100).toFixed(0)}%) y promesa de compraventa (${(PROYECTO.promesa_pct * 100).toFixed(0)}%) se calculan automáticamente.
-        Completa las cuotas hasta la entrega y el financiamiento del saldo.
+        Reserva (${(PROYECTO.reserva_pct * 100).toFixed(0)}%), promesa de compraventa (${(PROYECTO.promesa_pct * 100).toFixed(0)}%) y el monto de cada cuota se calculan automáticamente.
       </p>
-      <div class="row2">
-        <div class="field"><label>Número de cuotas hasta la entrega</label><input type="number" id="f-num-cuotas" min="0" step="1" value="0"></div>
-        <div class="field"><label>Monto por cuota (USD)</label><input type="number" id="f-monto-cuota" min="0" step="1" value="0"></div>
-      </div>
-      <div id="f-cuotas-aviso" class="hint" style="margin:-6px 0 14px;"></div>
+      <div class="field" style="max-width:260px;"><label>Número de cuotas hasta la entrega</label><input type="number" id="f-num-cuotas" min="0" step="1" value="0"></div>
       <div class="row2">
         <div class="field"><label>Interés anual del financiamiento (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
         <div class="field"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>
@@ -232,16 +231,21 @@ function calcularPlan(unidad) {
     const reserva = precioFinal * PROYECTO.reserva_pct;
     const promesa = precioFinal * PROYECTO.promesa_pct;
     const numCuotas = parseInt(qs('f-num-cuotas')?.value) || 0;
-    const montoCuota = parseFloat(qs('f-monto-cuota')?.value) || 0;
-    const cuotasTotal = numCuotas * montoCuota;
-    const abonoTotal = reserva + promesa + cuotasTotal;
-    const metaCuotas = precioFinal * (1 - PROYECTO.reserva_pct - PROYECTO.promesa_pct); // referencia: 20%
+    // Reserva + promesa + cuotas = 30% del precio (el 70% restante se
+    // financia). Las cuotas cubren lo que falta del 30% después de la
+    // reserva y la promesa (2% + 8% = 10% → cuotas = 20%) — se reparte entre
+    // el número de cuotas que ponga el asesor, así el monto de cada cuota
+    // sale solo y nunca puede quedar descuadrado con esa meta.
+    const ABONO_TOTAL_PCT = 0.30;
+    const cuotasTotal = precioFinal * Math.max(0, ABONO_TOTAL_PCT - PROYECTO.reserva_pct - PROYECTO.promesa_pct);
+    const montoCuota = numCuotas > 0 ? cuotasTotal / numCuotas : 0;
+    const abonoTotal = reserva + promesa + (numCuotas > 0 ? cuotasTotal : 0);
     const montoFinanciado = Math.max(0, precioFinal - abonoTotal);
     const tasa = parseFloat(qs('f-tasa')?.value) || PROYECTO.tasa_default;
     const plazo = parseFloat(qs('f-plazo')?.value) || PROYECTO.plazo_default_anios;
     const cuotaMensual = calcCuota(montoFinanciado, tasa, plazo * 12);
     return {
-      desc, precioFinal, reserva, promesa, numCuotas, montoCuota, cuotasTotal, metaCuotas,
+      desc, precioFinal, reserva, promesa, numCuotas, montoCuota, cuotasTotal: (numCuotas > 0 ? cuotasTotal : 0),
       abonoTotal, saldo: montoFinanciado, montoFinanciado, tasa, plazo, cuota: cuotaMensual,
     };
   }
@@ -290,15 +294,6 @@ function renderFinancingSummary() {
   const ref = seleccionadas[0];
   const plan = calcularPlan(ref);
   const tipo = PROYECTO.tipo_financiamiento;
-
-  // Aviso (no bloqueante) si las cuotas ingresadas no cuadran con la meta del 20%.
-  const aviso = qs('f-cuotas-aviso');
-  if (aviso && tipo === 'cuotas_entrega') {
-    const diff = plan.cuotasTotal - plan.metaCuotas;
-    aviso.textContent = Math.abs(diff) < 1
-      ? ''
-      : `Meta de referencia (20%): ${fmtMoney(plan.metaCuotas)} · ${diff > 0 ? 'estás ' + fmtMoney(diff) + ' por encima' : 'te faltan ' + fmtMoney(-diff)}. Puedes dejarlo así si así se negoció.`;
-  }
 
   let rows = `<div class="pf-line"><span>Precio de lista</span><b>${fmtMoney(ref.precio)}</b></div>`;
   if (plan.desc > 0) rows += `<div class="pf-line"><span>Descuento</span><b>- ${fmtMoney(plan.desc)}</b></div>`;
@@ -361,8 +356,13 @@ function buildPagoBreakdown(plan) {
 // Mensaje de WhatsApp para el cliente — profesional, con los datos de esta
 // proforma ya insertados. El asesor lo revisa/edita dentro de WhatsApp antes
 // de enviarlo (el enlace solo pre-llena el texto, no envía automáticamente).
-function buildWhatsAppMessage({ numeroProforma, asesorNombre, clienteNombre, proyectoNombre, unidadesTexto, precioFinalTexto }) {
-  return `Buenas, ${clienteNombre ? clienteNombre + ', ' : ''}mi nombre es ${asesorNombre}, asesor comercial de FORXA Inmobiliaria.\n\n` +
+function buildWhatsAppMessage({ numeroProforma, asesorNombre, asesorEmpresa, clienteNombre, proyectoNombre, unidadesTexto, precioFinalTexto }) {
+  // Colaboradores externos/independientes no representan a FORXA, así que se
+  // omite la mención de la empresa en la presentación del asesor.
+  const presentacion = asesorEmpresa === 'independiente'
+    ? `mi nombre es ${asesorNombre}.`
+    : `mi nombre es ${asesorNombre}, asesor comercial de FORXA Inmobiliaria.`;
+  return `Buenas, ${clienteNombre ? clienteNombre + ', ' : ''}${presentacion}\n\n` +
     `Le escribo para presentarle la cotización del proyecto ${proyectoNombre}${unidadesTexto ? ' — ' + unidadesTexto : ''}, con un valor final de ${precioFinalTexto}.\n\n` +
     `Le comparto la proforma N.º ${numeroProforma} con el detalle completo del plan de pago. Quedo atento/a a cualquier consulta que tenga.\n\n` +
     `Saludos cordiales.`;
@@ -372,10 +372,11 @@ async function generarProforma() {
   if (!seleccionadas.length) { showToast('Selecciona al menos una unidad.'); return; }
   const asesorNombre = qs('asesor-nombre').value.trim();
   const asesorTel = qs('asesor-tel').value.trim();
+  const asesorEmpresa = qs('asesor-empresa').value;
   if (!asesorNombre || !asesorTel) { showToast('Ingresa tu nombre y teléfono de asesor.'); return; }
   const nombre = qs('cli-nombre').value.trim();
   if (!nombre) { showToast('Ingresa el nombre del cliente.'); return; }
-  guardarAsesor(asesorNombre, asesorTel);
+  guardarAsesor(asesorNombre, asesorTel, asesorEmpresa);
 
   const tel = qs('cli-tel').value.trim();
   const email = qs('cli-email').value.trim();
@@ -492,7 +493,7 @@ async function generarProforma() {
   if (tel) {
     const mensaje = buildWhatsAppMessage({
       numeroProforma: numeroProforma || 'FORXA',
-      asesorNombre, clienteNombre: nombre, proyectoNombre: PROYECTO.nombre,
+      asesorNombre, asesorEmpresa, clienteNombre: nombre, proyectoNombre: PROYECTO.nombre,
       unidadesTexto, precioFinalTexto: fmtMoney(plan0.precioFinal),
     });
     waBtn.hidden = false;

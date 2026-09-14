@@ -108,8 +108,8 @@ async function cargarHistorial() {
   if (!filas.length) { list.innerHTML = '<div class="empty-state">No hay proformas con estos filtros.</div>'; return; }
 
   list.innerHTML = `<table class="admin-table"><thead><tr>
-    <th>N.º</th><th>Fecha</th><th>Proyecto</th><th>Asesor</th><th>Cliente</th>
-    <th>Unidad(es)</th><th>Precio final</th><th>Abono</th><th>Financiado</th><th>Cuota/mes</th>
+    <th>Cliente</th><th>Proyecto</th><th>Unidad(es)</th><th>N.º proforma</th><th>Fecha</th>
+    <th>Asesor</th><th>Precio final</th><th>Abono</th><th>Financiado</th><th>Cuota/mes</th>
   </tr></thead><tbody>${filas.map(filaHTML).join('')}</tbody></table>`;
 }
 
@@ -117,12 +117,12 @@ function filaHTML(f) {
   const fecha = f.created_at ? new Date(f.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
   const unidades = Array.isArray(f.unidades) ? f.unidades.map(u => u.nombre || u.codigo).join(', ') : '';
   return `<tr>
+    <td>${f.cliente_nombre || '—'}${f.cliente_telefono ? `<br><span class="hint">${f.cliente_telefono}</span>` : ''}</td>
+    <td>${f.cotizador_proyectos?.nombre || f.proyecto_id || '—'}</td>
+    <td>${unidades || '—'}</td>
     <td><strong>${f.numero_proforma || '—'}</strong></td>
     <td>${fecha}</td>
-    <td>${f.cotizador_proyectos?.nombre || f.proyecto_id || '—'}</td>
     <td>${f.asesor_nombre || '—'}${f.asesor_telefono ? `<br><span class="hint">${f.asesor_telefono}</span>` : ''}</td>
-    <td>${f.cliente_nombre || '—'}${f.cliente_telefono ? `<br><span class="hint">${f.cliente_telefono}</span>` : ''}</td>
-    <td>${unidades || '—'}</td>
     <td>${fmtMoney(f.precio_final)}</td>
     <td>${fmtMoney(f.abono_total)}</td>
     <td>${fmtMoney(f.monto_financiado)}</td>
@@ -130,20 +130,37 @@ function filaHTML(f) {
   </tr>`;
 }
 
+// CSV pensado para importar a un CRM (Zolutium u otro): un valor atómico por
+// columna (nada de texto combinado tipo "5 cuotas de $3000"), fechas en
+// formato ISO sin ambigüedad, montos como número plano (sin '$' ni comas de
+// miles, para que no se importen como texto), y sin saltos de línea dentro
+// de una celda (Notas los reemplaza por ' / ') para que ningún importador
+// los interprete como filas nuevas. El cliente va primero porque es
+// normalmente el campo que un CRM usa para crear/emparejar el contacto.
+function num2(n) {
+  return (n === null || n === undefined || n === '') ? '' : Math.round(Number(n) * 100) / 100;
+}
 function exportarCSV() {
   if (!HISTORIAL.length) { showToast('No hay filas para exportar con estos filtros.'); return; }
-  const headers = ['Número de proforma', 'Fecha', 'Proyecto', 'Asesor', 'Teléfono asesor',
-    'Cliente', 'Teléfono cliente', 'Correo cliente', 'Unidad(es)', 'Precio final', 'Descuento',
-    'Reserva', 'Promesa', 'Abono total', 'Monto financiado', 'Tasa anual (%)', 'Plazo (años)',
-    'N.º cuotas', 'Monto por cuota', 'Cuota mensual estimada', 'Notas'];
+  const headers = [
+    'Cliente - Nombre completo', 'Cliente - Teléfono', 'Cliente - Correo',
+    'Proyecto', 'Unidad(es)', 'Número de proforma', 'Fecha (AAAA-MM-DD)',
+    'Asesor - Nombre', 'Asesor - Teléfono',
+    'Precio final (USD)', 'Descuento (USD)', 'Reserva (USD)', 'Promesa (USD)',
+    'Abono total antes de entrega (USD)', 'Monto financiado (USD)',
+    'Tasa anual (%)', 'Plazo (años)', 'N.º de cuotas', 'Monto por cuota (USD)',
+    'Cuota mensual estimada (USD)', 'Notas',
+  ];
   const rows = HISTORIAL.map(f => [
-    f.numero_proforma || '', f.created_at ? new Date(f.created_at).toISOString().slice(0, 10) : '',
-    f.cotizador_proyectos?.nombre || f.proyecto_id || '', f.asesor_nombre || '', f.asesor_telefono || '',
     f.cliente_nombre || '', f.cliente_telefono || '', f.cliente_correo || '',
+    f.cotizador_proyectos?.nombre || f.proyecto_id || '',
     Array.isArray(f.unidades) ? f.unidades.map(u => u.nombre || u.codigo).join(' / ') : '',
-    f.precio_final ?? '', f.descuento ?? '', f.reserva ?? '', f.promesa ?? '', f.abono_total ?? '',
-    f.monto_financiado ?? '', f.tasa_usada ?? '', f.plazo_anios_usado ?? '',
-    f.numero_cuotas ?? '', f.monto_cuota ?? '', f.cuota_mensual ?? '', f.notas || '',
+    f.numero_proforma || '', f.created_at ? new Date(f.created_at).toISOString().slice(0, 10) : '',
+    f.asesor_nombre || '', f.asesor_telefono || '',
+    num2(f.precio_final), num2(f.descuento), num2(f.reserva), num2(f.promesa),
+    num2(f.abono_total), num2(f.monto_financiado), num2(f.tasa_usada), f.plazo_anios_usado ?? '',
+    f.numero_cuotas ?? '', num2(f.monto_cuota), num2(f.cuota_mensual),
+    (f.notas || '').replace(/\r?\n+/g, ' / ').trim(),
   ]);
   descargarCSV(`historial-proformas-${new Date().toISOString().slice(0, 10)}.csv`, [headers, ...rows]);
 }
