@@ -41,31 +41,92 @@ async function boot() {
   await loadUnidades();
   renderFinancingFields();
   wireEvents();
+  await loadAsesores();
   loadAsesorGuardado();
 }
 
-// El asesor llena su nombre/teléfono una vez y queda recordado en este
-// navegador (localStorage), para no volver a escribirlo en cada proforma.
+// Directorio de asesores FORXA (tabla cotizador_asesores, administrable
+// desde Administrar → Asesores) — alimenta el desplegable de "Datos del
+// asesor" para que, al elegir un nombre, el teléfono se rellene solo.
+let ASESORES = [];
+async function loadAsesores() {
+  const { data, error } = await supabaseClient
+    .from('cotizador_asesores')
+    .select('*')
+    .eq('activo', true)
+    .order('sort_order').order('nombre');
+  if (!error) ASESORES = data || [];
+  poblarSelectorAsesores();
+}
+
+function poblarSelectorAsesores() {
+  const sel = qs('asesor-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona tu nombre…</option>' +
+    ASESORES.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('') +
+    '<option value="__otro__">Otro / no está en la lista</option>';
+}
+
+// Muestra el desplegable (empresa = forxa) o los campos manuales (empresa =
+// independiente, o "Otro" elegido en el desplegable) y, si hay un asesor
+// del directorio seleccionado, copia su nombre/teléfono a los campos que
+// generarProforma() ya lee — así el resto del flujo no cambia.
+function aplicarModoAsesor() {
+  const empresa = qs('asesor-empresa').value;
+  const selField = qs('asesor-select-field');
+  const manualFields = qs('asesor-manual-fields');
+  if (empresa === 'independiente') {
+    selField.hidden = true;
+    manualFields.hidden = false;
+    return;
+  }
+  selField.hidden = false;
+  const selVal = qs('asesor-select').value;
+  if (selVal && selVal !== '__otro__') {
+    const a = ASESORES.find(x => x.id === selVal);
+    if (a) {
+      qs('asesor-nombre').value = a.nombre;
+      poblarSelectorPais(qs('asesor-tel-code'), a.telefono_codigo || '593');
+      qs('asesor-tel').value = a.telefono_numero || '';
+    }
+    manualFields.hidden = true;
+  } else {
+    manualFields.hidden = false;
+  }
+}
+
+// El asesor llena su nombre/teléfono una vez (o los elige del desplegable)
+// y queda recordado en este navegador (localStorage), para no repetirlo en
+// cada proforma.
 function loadAsesorGuardado() {
-  let savedCode = '593', nombre = '', tel = '', empresa = 'forxa';
+  let savedCode = '593', nombre = '', tel = '', empresa = 'forxa', asesorId = '';
   try {
     savedCode = localStorage.getItem('forxa_asesor_tel_code') || '593';
     nombre = localStorage.getItem('forxa_asesor_nombre') || '';
     tel = localStorage.getItem('forxa_asesor_tel') || '';
     empresa = localStorage.getItem('forxa_asesor_empresa') || 'forxa';
+    asesorId = localStorage.getItem('forxa_asesor_id') || '';
   } catch (e) { /* localStorage puede fallar en modo privado; no es crítico */ }
   poblarSelectorPais(qs('asesor-tel-code'), savedCode);
   poblarSelectorPais(qs('cli-tel-code'), '593'); // el cliente cambia en cada proforma; Ecuador por defecto
   if (nombre) qs('asesor-nombre').value = nombre;
   if (tel) qs('asesor-tel').value = tel;
   qs('asesor-empresa').value = empresa;
+  // Si el asesor guardado ya no existe en el directorio (lo desactivaron o
+  // lo borraron), simplemente no se marca nada y queda en modo manual con
+  // los datos guardados de la última vez.
+  if (asesorId && qs('asesor-select').querySelector(`option[value="${asesorId}"]`)) {
+    qs('asesor-select').value = asesorId;
+  }
+  aplicarModoAsesor();
 }
-function guardarAsesor(nombre, tel, empresa, telCode) {
+function guardarAsesor(nombre, tel, empresa, telCode, asesorId) {
   try {
     localStorage.setItem('forxa_asesor_nombre', nombre);
     localStorage.setItem('forxa_asesor_tel', tel);
     localStorage.setItem('forxa_asesor_empresa', empresa);
     localStorage.setItem('forxa_asesor_tel_code', telCode);
+    localStorage.setItem('forxa_asesor_id', asesorId || '');
   } catch (e) { /* no crítico */ }
 }
 
@@ -170,6 +231,8 @@ function toggleUnit(u, card) {
 
 function wireEvents() {
   qs('desc-monto').addEventListener('input', renderFinancingSummary);
+  qs('asesor-empresa').addEventListener('change', aplicarModoAsesor);
+  qs('asesor-select').addEventListener('change', aplicarModoAsesor);
   qs('generate-btn').onclick = generarProforma;
   qs('back-btn').onclick = () => { qs('proforma-view').hidden = true; qs('form-view').hidden = false; window.scrollTo(0, 0); };
   qs('print-btn').onclick = () => window.print();
@@ -410,7 +473,8 @@ async function generarProforma() {
   if (!asesorNombre || !asesorTelLocal) { showToast('Ingresa tu nombre y teléfono de asesor.'); return; }
   const nombre = qs('cli-nombre').value.trim();
   if (!nombre) { showToast('Ingresa el nombre del cliente.'); return; }
-  guardarAsesor(asesorNombre, asesorTelLocal, asesorEmpresa, asesorTelCode);
+  const asesorSeleccionadoId = qs('asesor-select') ? qs('asesor-select').value : '';
+  guardarAsesor(asesorNombre, asesorTelLocal, asesorEmpresa, asesorTelCode, asesorSeleccionadoId);
   const asesorTel = formatTelefono(asesorTelCode, asesorTelLocal); // ej. '+593 991234567', para mostrar
 
   const telCode = qs('cli-tel-code').value;
@@ -545,7 +609,7 @@ async function generarProforma() {
     asesor_nombre: asesorNombre, asesor_telefono: asesorTel,
     proyecto_id: PROYECTO.id,
     cliente_nombre: nombre, cliente_telefono: tel, cliente_correo: email,
-    unidades: seleccionadas.map(u => ({ codigo: u.codigo, nombre: u.nombre, precio_lista: u.precio })),
+    unidades: seleccionadas.map(u => ({ codigo: u.codigo, nombre: u.nombre, precio_lista: u.precio, tipo: u.tipo || null })),
     descuento: plan0.desc, precio_final: plan0.precioFinal, reserva: plan0.reserva, promesa: plan0.promesa || 0,
     abono_total: plan0.abonoTotal ?? plan0.reserva, monto_financiado: plan0.saldo,
     tasa_usada: plan0.tasa ?? null, plazo_anios_usado: plan0.plazo ?? null,

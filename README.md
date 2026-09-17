@@ -12,6 +12,50 @@ ni con `covers`.
 A diferencia del portafolio, **todo este sitio requiere iniciar sesión**
 (no solo el panel de admin): es material interno, no debe quedar público.
 
+## Asesores con autocompletado y dashboard de preferencias (esta entrega)
+
+**Qué cambia y por qué corre en Supabase:** agrega una tabla nueva
+(`cotizador_asesores`), así que necesita `supabase/update_asesores.sql` — es
+igual de seguro que las anteriores (usa `if not exists`/`on conflict`, se
+puede correr más de una vez).
+
+- **Datos del asesor con autocompletado**: cuando Empresa = "FORXA
+  Inmobiliaria", el formulario ya no pide escribir nombre y teléfono a mano
+  — aparece un desplegable con los asesores de FORXA (precargado con
+  `Contactos_Asesores.xlsx`: 12 personas) y, al elegir un nombre, el
+  teléfono se rellena solo. Si alguien no está en la lista todavía, la
+  opción **"Otro / no está en la lista"** muestra los campos manuales de
+  siempre, para no bloquear a nadie. Con Empresa = "Independiente" el
+  formulario sigue siendo 100% manual, como antes.
+  - El directorio se administra desde **Administrar → Asesores** (agregar,
+    editar teléfono/correo, o desactivar a alguien que ya no trabaja con
+    FORXA) — no requiere tocar código ni volver a correr SQL.
+  - Es solo un directorio de contacto: **no crea cuentas de acceso** al
+    cotizador (eso se sigue haciendo en Supabase → Authentication → Users,
+    como siempre).
+- **Dashboard de preferencias de compra (dentro de Historial)**: en
+  `historial.html`, junto a la tabla de siempre, hay una pestaña nueva
+  **"📊 Dashboard de preferencias"** con reportes sobre las proformas que
+  cumplen los filtros activos (proyecto, tipología, fechas, cliente/asesor):
+  - **Rango de presupuesto**: en cuántas proformas cayó el precio final en
+    cada franja (las franjas se calculan solas según el mínimo/máximo de lo
+    filtrado, no son fijas).
+  - **Ubicación preferida**: sector/proyecto más cotizado.
+  - **Tipología de mayor y menor demanda**: qué tipo de unidad (casa,
+    suite, departamento, local, lote…) se cotiza más y cuál menos.
+  - Se agregó un filtro nuevo, **Tipología / tipo de unidad**, para poder
+    aislar el reporte a un solo tipo.
+  - **Exportar a PDF**: el botón usa Imprimir del navegador (igual que la
+    proforma) con una vista solo del dashboard — sin menú, filtros ni
+    tabla. En Chrome/Edge, si los colores de las barras no se ven en el
+    PDF, hay que activar **"Gráficos de fondo"** en el diálogo de
+    impresión (Más ajustes).
+  - **Dato importante**: las proformas generadas *antes* de esta
+    actualización no tienen tipología guardada, así que van a aparecer
+    agrupadas como "Sin especificar" en ese reporte — no hace falta
+    corregir nada, es solo que ese dato no existía todavía cuando se
+    generaron.
+
 ## Si ya tenías el sitio desplegado (actualización de diseño/errores)
 
 Si ya corriste `schema.sql` y `seed_data.sql` en Supabase y el sitio ya está
@@ -36,7 +80,13 @@ esos pasos.** Para aplicar esta entrega:
    (Misicata, AURA, Álabes, Portón) un color distinto y propio para su
    tarjeta/banner — no afecta a la proforma, que usa siempre el azul de marca
    FORXA.
-5. **Si las portadas de los proyectos o las fichas de las unidades todavía no
+5. **Corre `supabase/update_asesores.sql`** una vez en el SQL Editor —
+   **obligatorio** para esta entrega (crea la tabla `cotizador_asesores` y
+   la precarga con los 12 asesores de `Contactos_Asesores.xlsx`). Sin
+   correrlo, el desplegable de "Datos del asesor" del cotizador aparece
+   vacío. Ver el detalle en "Asesores con autocompletado y dashboard de
+   preferencias" más arriba.
+6. **Si las portadas de los proyectos o las fichas de las unidades todavía no
    se ven**, es porque `scripts/bulk_upload_fotos.mjs` (Paso 3 abajo)
    todavía no se ha corrido contra tu proyecto de Supabase — no es un error
    de código, es que esas imágenes viven en Supabase Storage y hay que
@@ -169,14 +219,15 @@ por completo, con inspiración en una factura/invoice profesional:
 │   ├── supabase-client.js   → URL + anon key (misma que el portafolio)
 │   ├── auth.js                → login/logout + verificación de admin/historial
 │   ├── utils.js                 → formato de moneda, cuotas, URLs firmadas, WhatsApp, CSV
-│   ├── cotizador.js               → motor genérico (sirve para los 4 proyectos)
-│   ├── admin.js                     → CRUD de proyectos y unidades
-│   └── historial.js                   → (nuevo) tabla/filtros/export del historial
+│   ├── cotizador.js               → motor genérico (sirve para los 4 proyectos) + desplegable de asesor
+│   ├── admin.js                     → CRUD de proyectos, unidades y asesores
+│   └── historial.js                   → tabla/filtros/export del historial + dashboard de preferencias
 ├── supabase/
 │   ├── schema.sql                            → tablas, RLS, bucket privado (ya incluye lo nuevo)
 │   ├── seed_data.sql                         → los 4 proyectos + ~120 unidades ya cargadas
 │   ├── update_colores_proyecto.sql           → da un color propio a cada proyecto ya existente
-│   └── update_financiamiento_v2.sql          → (nuevo, obligatorio) número de proforma, historial, 30%/70%
+│   ├── update_financiamiento_v2.sql          → número de proforma, historial, 30%/70%
+│   └── update_asesores.sql                   → (nuevo, obligatorio) directorio de asesores FORXA
 ├── fotos/                 → fichas extraídas de los brochures (para subir una vez)
 └── scripts/bulk_upload_fotos.mjs → sube fotos/ a Supabase Storage de un tirón
 ```
@@ -277,9 +328,15 @@ Usa un repo privado.
   proyecto, seleccionan la(s) unidad(es), llenan los datos del cliente y
   generan la proforma (imprimir/guardar como PDF, igual que antes).
 - **Administradores**: además ven el enlace "Administrar" — ahí editan
-  precio/estado/fotos de cualquier unidad al instante, y pueden agregar un
+  precio/estado/fotos de cualquier unidad al instante, pueden agregar un
   proyecto nuevo sin tocar código (solo configuran su fórmula de
-  financiamiento: reserva %, promesa %, tasa y plazo).
+  financiamiento: reserva %, promesa %, tasa y plazo), y mantienen el
+  directorio de asesores (agregar, editar teléfono/correo, o desactivar a
+  quien ya no trabaje con FORXA) que alimenta el desplegable del cotizador.
+- **Quien tenga acceso al Historial**: además de la tabla de proformas, tiene
+  la pestaña "Dashboard de preferencias" con rango de presupuesto, ubicación
+  preferida y tipología de mayor/menor demanda de las proformas filtradas,
+  exportable a PDF con el botón "Exportar a PDF".
 
 ## Notas de los datos cargados (léelo antes de poner esto en manos del equipo)
 

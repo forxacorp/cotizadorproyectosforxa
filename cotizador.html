@@ -33,7 +33,19 @@
     <div class="card">
       <h3>Datos del asesor</h3>
       <p class="hint" style="margin-bottom:12px;">Aparece en la proforma y en el pie de página. Se recuerda en este navegador para la próxima vez.</p>
-      <div class="row2">
+      <div class="field" style="max-width:260px;">
+        <label>Empresa</label>
+        <select id="asesor-empresa">
+          <option value="forxa">FORXA Inmobiliaria</option>
+          <option value="independiente">Independiente</option>
+        </select>
+      </div>
+      <div class="field" id="asesor-select-field">
+        <label>Asesor *</label>
+        <select id="asesor-select"><option value="">Cargando asesores…</option></select>
+        <p class="hint" style="margin-top:6px;">Al elegir tu nombre, el teléfono se rellena solo. Si no apareces en la lista, elige "Otro" y escríbelos.</p>
+      </div>
+      <div class="row2" id="asesor-manual-fields">
         <div class="field"><label>Nombre completo *</label><input type="text" id="asesor-nombre" placeholder="Ej. Gabriel Palomeque"></div>
         <div class="field">
           <label>Teléfono de contacto *</label>
@@ -42,13 +54,6 @@
             <input type="text" id="asesor-tel" placeholder="99 000 0000">
           </div>
         </div>
-      </div>
-      <div class="field" style="max-width:260px;margin-bottom:0;">
-        <label>Empresa</label>
-        <select id="asesor-empresa">
-          <option value="forxa">FORXA Inmobiliaria</option>
-          <option value="independiente">Independiente</option>
-        </select>
       </div>
     </div>
 

@@ -36,8 +36,85 @@ on conflict (user_id) do nothing;</pre>
   document.getElementById('p-cancel').addEventListener('click', resetProjectForm);
   document.getElementById('unit-project-select').addEventListener('change', loadUnits);
   document.getElementById('add-unit-btn').addEventListener('click', addBlankUnit);
+  document.getElementById('add-asesor-btn').addEventListener('click', addBlankAsesor);
 
   await loadProjects();
+  await loadAsesoresAdmin();
+}
+
+// ---------- Asesores (directorio para el desplegable del cotizador) ----------
+let ASESORES_ADMIN = [];
+
+async function loadAsesoresAdmin() {
+  const { data, error } = await supabaseClient.from('cotizador_asesores').select('*').order('sort_order').order('nombre');
+  const list = document.getElementById('asesores-list');
+  if (error) { list.innerHTML = `Error: ${error.message}`; return; }
+  ASESORES_ADMIN = data;
+
+  list.innerHTML = `<table class="admin-table"><thead><tr>
+    <th>Nombre</th><th>Correo</th><th>Cód. país</th><th>Teléfono</th><th>Activo</th><th></th>
+  </tr></thead><tbody>${data.map(a => `
+    <tr data-id="${a.id}">
+      <td><input class="a-nombre" value="${a.nombre || ''}" style="width:150px;"></td>
+      <td><input class="a-correo" type="email" value="${a.correo || ''}" style="width:200px;"></td>
+      <td><input class="a-codigo" value="${a.telefono_codigo || '593'}" style="width:64px;"></td>
+      <td><input class="a-numero" value="${a.telefono_numero || ''}" style="width:120px;"></td>
+      <td style="text-align:center;"><input type="checkbox" class="a-activo" ${a.activo ? 'checked' : ''} style="width:auto;min-height:auto;"></td>
+      <td style="white-space:nowrap;">
+        <button class="icon-btn" title="Guardar" aria-label="Guardar asesor ${a.nombre || ''}" data-save>&#10003;</button>
+        <button class="icon-btn danger" title="Eliminar" aria-label="Eliminar asesor ${a.nombre || ''}" data-del>&times;</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+
+  list.querySelectorAll('[data-save]').forEach(b => b.onclick = (e) => saveAsesorRow(e.target.closest('tr')));
+  list.querySelectorAll('[data-del]').forEach(b => b.onclick = (e) => deleteAsesorRow(e.target.closest('tr')));
+}
+
+async function saveAsesorRow(tr) {
+  const id = tr.dataset.id;
+  const payload = {
+    nombre: tr.querySelector('.a-nombre').value.trim(),
+    correo: tr.querySelector('.a-correo').value.trim() || null,
+    telefono_codigo: tr.querySelector('.a-codigo').value.trim() || '593',
+    telefono_numero: tr.querySelector('.a-numero').value.replace(/[^\d]/g, ''),
+    activo: tr.querySelector('.a-activo').checked,
+  };
+  if (!payload.nombre) { showToast('El nombre del asesor es obligatorio.'); return; }
+  const { error } = id.startsWith('new-')
+    ? await supabaseClient.from('cotizador_asesores').insert({ ...payload, sort_order: ASESORES_ADMIN.length + 1 })
+    : await supabaseClient.from('cotizador_asesores').update(payload).eq('id', id);
+  if (error) { showToast('Error guardando asesor: ' + error.message); return; }
+  await loadAsesoresAdmin();
+}
+
+async function deleteAsesorRow(tr) {
+  if (!(await showConfirm('¿Eliminar este asesor del directorio? Ya no va a aparecer en el desplegable del cotizador.'))) return;
+  const id = tr.dataset.id;
+  if (!id.startsWith('new-')) {
+    const { error } = await supabaseClient.from('cotizador_asesores').delete().eq('id', id);
+    if (error) { showToast('Error eliminando: ' + error.message); return; }
+  }
+  await loadAsesoresAdmin();
+}
+
+function addBlankAsesor() {
+  const list = document.getElementById('asesores-list');
+  const tbody = list.querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.dataset.id = 'new-' + Date.now();
+  tr.innerHTML = `
+    <td><input class="a-nombre" style="width:150px;"></td>
+    <td><input class="a-correo" type="email" style="width:200px;"></td>
+    <td><input class="a-codigo" value="593" style="width:64px;"></td>
+    <td><input class="a-numero" style="width:120px;"></td>
+    <td style="text-align:center;"><input type="checkbox" class="a-activo" checked style="width:auto;min-height:auto;"></td>
+    <td style="white-space:nowrap;">
+      <button class="icon-btn" title="Guardar" aria-label="Guardar asesor nuevo" data-save>&#10003;</button>
+      <button class="icon-btn danger" title="Eliminar" aria-label="Quitar fila" data-del>&times;</button>
+    </td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('[data-save]').onclick = () => saveAsesorRow(tr);
+  tr.querySelector('[data-del]').onclick = () => tr.remove();
 }
 
 async function loadProjects() {

@@ -11,7 +11,7 @@
 <body>
 
 <div class="internal-bar no-print">Historial de proformas · acceso restringido</div>
-<header class="site-header">
+<header class="site-header no-print">
   <div class="wrap">
     <a class="brand" href="index.html">
       <img src="assets/logo.png" alt="FORXA Inmobiliaria" onerror="this.style.display='none'">
@@ -26,15 +26,18 @@
   <div id="sin-permisos" hidden></div>
 
   <div id="historial-content" hidden>
-    <div class="card">
+    <div class="card no-print">
       <h3>Filtros</h3>
       <div class="row2">
         <div class="field"><label>Proyecto</label>
           <select id="f-proyecto"><option value="">Todos los proyectos</option></select>
         </div>
-        <div class="field"><label>Buscar (cliente o asesor)</label>
-          <input type="text" id="f-buscar" placeholder="Nombre del cliente o asesor…">
+        <div class="field"><label>Tipología / tipo de unidad</label>
+          <select id="f-tipologia"><option value="">Todas las tipologías</option></select>
         </div>
+      </div>
+      <div class="field"><label>Buscar (cliente o asesor)</label>
+        <input type="text" id="f-buscar" placeholder="Nombre del cliente o asesor…">
       </div>
       <div class="row2">
         <div class="field"><label>Desde</label><input type="date" id="f-desde"></div>
@@ -46,10 +49,59 @@
       </div>
     </div>
 
-    <div class="card">
-      <h3>Proformas generadas</h3>
-      <p class="hint" id="historial-contador" style="margin-bottom:12px;"></p>
-      <div id="historial-list" class="admin-table-wrap"><div class="empty-state">Cargando…</div></div>
+    <div class="card no-print" style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-ghost btn-sm tab-btn active" id="tab-btn-tabla">📋 Tabla de proformas</button>
+      <button type="button" class="btn btn-ghost btn-sm tab-btn" id="tab-btn-dashboard">📊 Dashboard de preferencias</button>
+    </div>
+
+    <div id="vista-tabla">
+      <div class="card">
+        <h3>Proformas generadas</h3>
+        <p class="hint" id="historial-contador" style="margin-bottom:12px;"></p>
+        <div id="historial-list" class="admin-table-wrap"><div class="empty-state">Cargando…</div></div>
+      </div>
+    </div>
+
+    <div id="vista-dashboard" hidden>
+      <div id="dashboard-print-area">
+        <div class="dash-print-header">
+          <img src="assets/logo.png" alt="FORXA Inmobiliaria">
+          <div>
+            <h2>Dashboard de preferencias de compra</h2>
+            <p id="dash-print-filtros"></p>
+          </div>
+        </div>
+
+        <div class="card no-print" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <p class="hint" style="margin:0;">Calculado sobre las proformas que cumplen los filtros de arriba.</p>
+          <button type="button" class="btn btn-primary btn-sm" id="dash-exportar">Exportar a PDF</button>
+        </div>
+
+        <div class="dash-kpis">
+          <div class="dash-kpi"><span class="label">Proformas analizadas</span><span class="value" id="kpi-total">0</span></div>
+          <div class="dash-kpi"><span class="label">Ticket promedio</span><span class="value" id="kpi-ticket">—</span></div>
+          <div class="dash-kpi"><span class="label">Financiado promedio</span><span class="value" id="kpi-financiado">—</span></div>
+          <div class="dash-kpi"><span class="label">Cuota mensual promedio</span><span class="value" id="kpi-cuota">—</span></div>
+        </div>
+
+        <div class="card">
+          <h3>Rango de presupuesto</h3>
+          <p class="hint" style="margin-bottom:14px;">Cuántas proformas cayeron en cada franja de precio final.</p>
+          <div id="dash-rangos" class="dash-bars"></div>
+        </div>
+
+        <div class="card">
+          <h3>Ubicación preferida</h3>
+          <p class="hint" style="margin-bottom:14px;">Sector/proyecto de las proformas generadas.</p>
+          <div id="dash-ubicaciones" class="dash-bars"></div>
+        </div>
+
+        <div class="card">
+          <h3>Tipología: mayor y menor demanda</h3>
+          <p class="hint" id="dash-tipologias-resumen" style="margin-bottom:14px;"></p>
+          <div id="dash-tipologias" class="dash-bars"></div>
+        </div>
+      </div>
     </div>
   </div>
 

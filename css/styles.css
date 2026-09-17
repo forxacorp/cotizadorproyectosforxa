@@ -355,6 +355,38 @@ img { max-width: 100%; display: block; }
 .pf-photo-item .cap { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--carbon); margin-bottom: 8px; }
 .pf-photo-item img { width: 100%; border-radius: var(--radius); display: block; }
 
+/* ---------- historial: pestañas Tabla / Dashboard ---------- */
+.tab-btn.active { background: var(--olive); color: #fff; border-color: var(--olive); }
+
+/* ---------- dashboard de preferencias de compra (historial.html) ---------- */
+.dash-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.dash-kpi {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px 20px; box-shadow: var(--shadow-sm);
+}
+.dash-kpi .label { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.dash-kpi .value { display: block; font-family: var(--font-display); font-size: 23px; font-weight: 700; color: var(--olive); }
+
+.dash-bars { display: flex; flex-direction: column; gap: 13px; }
+.dash-bar-row { display: grid; grid-template-columns: 210px 1fr 104px; align-items: center; gap: 12px; }
+.dash-bar-label { font-size: 13px; color: var(--text); line-height: 1.35; }
+.dash-bar-track { height: 12px; background: var(--crema); border-radius: 100px; overflow: hidden; }
+.dash-bar-fill { height: 100%; background: linear-gradient(90deg, var(--olive-soft), var(--olive)); border-radius: 100px; }
+.dash-bar-count { font-size: 12.5px; color: var(--muted); text-align: right; white-space: nowrap; }
+.dash-bar-count strong { color: var(--text); font-weight: 700; }
+@media (max-width: 640px) {
+  .dash-bar-row { grid-template-columns: 108px 1fr 68px; gap: 8px; }
+  .dash-bar-label { font-size: 11.5px; }
+  .dash-bar-count { font-size: 11px; }
+}
+
+/* Encabezado que solo se ve al exportar/imprimir el dashboard (en pantalla
+   ya está el header normal del sitio, que se oculta con no-print). */
+.dash-print-header { display: none; }
+.dash-print-header img { height: 44px; }
+.dash-print-header h2 { font-size: 19px; color: var(--carbon); }
+.dash-print-header p { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
@@ -363,6 +395,17 @@ img { max-width: 100%; display: block; }
   .pf-page + .pf-page { break-before: page; padding-top: 24px; }
   /* Por si el badge de Netlify u otro overlay inyectado queda en el DOM al imprimir */
   [class*="netlify" i], [id*="netlify" i] { display: none !important; }
+
+  /* Dashboard de preferencias: encabezado propio (con fecha y filtros
+     aplicados, para que el PDF tenga contexto aunque se vea suelto), tarjetas
+     con borde fino en vez de sombra, y colores de fondo forzados a imprimir
+     (Chrome/Edge necesitan además "Gráficos de fondo" activado en el diálogo
+     de impresión para que las barras se vean con color). */
+  .dash-print-header { display: flex !important; align-items: center; gap: 16px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 3px solid var(--olive); }
+  #dashboard-print-area .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+  .dash-kpi, .dash-bar-fill, .dash-print-header {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact;
+  }
 }
 
 .hint { color: var(--muted); font-size: 12.5px; }

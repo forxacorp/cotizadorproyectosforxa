@@ -39,7 +39,10 @@ on conflict (user_id) do update set puede_ver_historial = true;</pre>
 
   document.getElementById('historial-content').hidden = false;
   await cargarProyectosFiltro();
+  await cargarTipologiasFiltro();
   wireFiltros();
+  wireTabs();
+  document.getElementById('dash-exportar').onclick = () => window.print();
   await cargarHistorial();
 }
 
@@ -51,19 +54,51 @@ async function cargarProyectosFiltro() {
     PROYECTOS_FILTRO.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
 }
 
+// Tipologías disponibles para filtrar/graficar: se leen una sola vez de todo
+// el historial (no del resultado ya filtrado), para que la lista de opciones
+// no se vaya reduciendo a medida que se aplican otros filtros.
+async function cargarTipologiasFiltro() {
+  const { data, error } = await supabaseClient.from('cotizador_historial').select('unidades').limit(2000);
+  const sel = document.getElementById('f-tipologia');
+  if (error || !data) return;
+  const set = new Set();
+  data.forEach(row => (Array.isArray(row.unidades) ? row.unidades : []).forEach(u => { if (u.tipo) set.add(u.tipo); }));
+  const tipos = Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  sel.innerHTML = '<option value="">Todas las tipologías</option>' +
+    tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
 function wireFiltros() {
-  ['f-proyecto', 'f-buscar', 'f-desde', 'f-hasta'].forEach(id => {
+  ['f-proyecto', 'f-tipologia', 'f-buscar', 'f-desde', 'f-hasta'].forEach(id => {
     document.getElementById(id).addEventListener('input', debounce(cargarHistorial, 300));
     document.getElementById(id).addEventListener('change', cargarHistorial);
   });
   document.getElementById('f-limpiar').onclick = () => {
     document.getElementById('f-proyecto').value = '';
+    document.getElementById('f-tipologia').value = '';
     document.getElementById('f-buscar').value = '';
     document.getElementById('f-desde').value = '';
     document.getElementById('f-hasta').value = '';
     cargarHistorial();
   };
   document.getElementById('f-exportar').onclick = exportarExcel;
+}
+
+// Pestañas Tabla / Dashboard: ambas se calculan sobre el mismo HISTORIAL ya
+// cargado y filtrado, así que cambiar de pestaña no vuelve a consultar la BD.
+function wireTabs() {
+  const btnTabla = document.getElementById('tab-btn-tabla');
+  const btnDash = document.getElementById('tab-btn-dashboard');
+  const vistaTabla = document.getElementById('vista-tabla');
+  const vistaDash = document.getElementById('vista-dashboard');
+  btnTabla.onclick = () => {
+    vistaTabla.hidden = false; vistaDash.hidden = true;
+    btnTabla.classList.add('active'); btnDash.classList.remove('active');
+  };
+  btnDash.onclick = () => {
+    vistaTabla.hidden = true; vistaDash.hidden = false;
+    btnDash.classList.add('active'); btnTabla.classList.remove('active');
+  };
 }
 
 let debounceTimer = null;
@@ -76,13 +111,14 @@ async function cargarHistorial() {
   list.innerHTML = '<div class="empty-state">Cargando…</div>';
 
   const proyectoId = document.getElementById('f-proyecto').value;
+  const tipologia = document.getElementById('f-tipologia').value;
   const desde = document.getElementById('f-desde').value;
   const hasta = document.getElementById('f-hasta').value;
   const buscar = document.getElementById('f-buscar').value.trim();
 
   let query = supabaseClient
     .from('cotizador_historial')
-    .select('*, cotizador_proyectos(nombre)')
+    .select('*, cotizador_proyectos(nombre, tagline, ubicacion)')
     .order('created_at', { ascending: false })
     .limit(500);
 
@@ -100,17 +136,27 @@ async function cargarHistorial() {
       (f.cliente_nombre || '').toLowerCase().includes(q) ||
       (f.asesor_nombre || '').toLowerCase().includes(q));
   }
+  // La tipología vive dentro del jsonb "unidades" de cada proforma (puede
+  // traer varias unidades), así que el filtro se aplica en el cliente: se
+  // queda la fila si AL MENOS UNA de sus unidades es de esa tipología.
+  if (tipologia) {
+    filas = filas.filter(f => Array.isArray(f.unidades) && f.unidades.some(u => u.tipo === tipologia));
+  }
 
   HISTORIAL = filas;
   document.getElementById('historial-contador').textContent =
     filas.length === 1 ? '1 proforma encontrada' : `${filas.length} proformas encontradas`;
 
-  if (!filas.length) { list.innerHTML = '<div class="empty-state">No hay proformas con estos filtros.</div>'; return; }
+  if (!filas.length) {
+    list.innerHTML = '<div class="empty-state">No hay proformas con estos filtros.</div>';
+  } else {
+    list.innerHTML = `<table class="admin-table"><thead><tr>
+      <th>Cliente</th><th>Proyecto</th><th>Unidad(es)</th><th>N.º proforma</th><th>Fecha</th>
+      <th>Asesor</th><th>Precio final</th><th>Abono</th><th>Financiado</th><th>Cuota/mes</th>
+    </tr></thead><tbody>${filas.map(filaHTML).join('')}</tbody></table>`;
+  }
 
-  list.innerHTML = `<table class="admin-table"><thead><tr>
-    <th>Cliente</th><th>Proyecto</th><th>Unidad(es)</th><th>N.º proforma</th><th>Fecha</th>
-    <th>Asesor</th><th>Precio final</th><th>Abono</th><th>Financiado</th><th>Cuota/mes</th>
-  </tr></thead><tbody>${filas.map(filaHTML).join('')}</tbody></table>`;
+  renderDashboard(filas);
 }
 
 function filaHTML(f) {
@@ -128,6 +174,139 @@ function filaHTML(f) {
     <td>${fmtMoney(f.monto_financiado)}</td>
     <td>${f.cuota_mensual ? fmtMoney(f.cuota_mensual) : '—'}</td>
   </tr>`;
+}
+
+// ============================================================================
+// Dashboard de preferencias de compra: KPIs + 3 reportes (rango de
+// presupuesto, ubicación preferida, tipología de mayor/menor demanda) sobre
+// las proformas que cumplen los filtros de arriba. Se recalcula cada vez que
+// cargarHistorial() trae datos nuevos — no hace consultas propias a la BD.
+// Las "barras" son simples divs con % de ancho (no una librería de gráficos)
+// para que impriman nítidas en el PDF sin depender de un CDN externo.
+// ============================================================================
+
+function promedio(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
+function numsValidos(filas, campo) {
+  return filas.map(f => Number(f[campo])).filter(n => !isNaN(n) && n > 0);
+}
+
+function renderDashboard(filas) {
+  document.getElementById('kpi-total').textContent = filas.length;
+  const precios = numsValidos(filas, 'precio_final');
+  const financiados = numsValidos(filas, 'monto_financiado');
+  const cuotas = numsValidos(filas, 'cuota_mensual');
+  document.getElementById('kpi-ticket').textContent = precios.length ? fmtMoney(promedio(precios)) : '—';
+  document.getElementById('kpi-financiado').textContent = financiados.length ? fmtMoney(promedio(financiados)) : '—';
+  document.getElementById('kpi-cuota').textContent = cuotas.length ? fmtMoney(promedio(cuotas)) + ' /mes' : '—';
+
+  renderRangosPresupuesto(precios);
+  renderUbicaciones(filas);
+  renderTipologias(filas);
+  renderFiltrosResumenImpresion();
+}
+
+// Renderiza una lista de barras horizontales (label / barra / conteo + %)
+// dentro del contenedor containerId. entries = [{ label, count }].
+function renderBars(containerId, entries) {
+  const el = document.getElementById(containerId);
+  if (!entries.length) { el.innerHTML = '<div class="empty-state">Sin datos para estos filtros.</div>'; return; }
+  const max = Math.max(...entries.map(e => e.count));
+  const total = entries.reduce((a, b) => a + b.count, 0);
+  el.innerHTML = entries.map(e => `
+    <div class="dash-bar-row">
+      <div class="dash-bar-label">${e.label}</div>
+      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${max ? (e.count / max * 100) : 0}%"></div></div>
+      <div class="dash-bar-count"><strong>${e.count}</strong> (${total ? Math.round(e.count / total * 100) : 0}%)</div>
+    </div>`).join('');
+}
+
+// Divide el precio final en 5 franjas iguales entre el mínimo y el máximo de
+// las proformas filtradas (en vez de rangos fijos en USD) para que el
+// reporte tenga sentido tanto en proyectos de $80k como en uno de $300k.
+function renderRangosPresupuesto(precios) {
+  if (!precios.length) { renderBars('dash-rangos', []); return; }
+  const min = Math.min(...precios), max = Math.max(...precios);
+  const NUM_BUCKETS = 5;
+  let buckets;
+  if (min === max) {
+    buckets = [{ label: fmtMoney(min), count: precios.length }];
+  } else {
+    const step = (max - min) / NUM_BUCKETS;
+    buckets = Array.from({ length: NUM_BUCKETS }, (_, i) => ({
+      from: min + step * i,
+      to: i === NUM_BUCKETS - 1 ? max : min + step * (i + 1),
+      count: 0,
+    }));
+    precios.forEach(p => {
+      let idx = Math.floor((p - min) / step);
+      if (idx >= NUM_BUCKETS) idx = NUM_BUCKETS - 1;
+      if (idx < 0) idx = 0;
+      buckets[idx].count++;
+    });
+    buckets.forEach(b => { b.label = `${fmtMoney(b.from)} – ${fmtMoney(b.to)}`; });
+  }
+  renderBars('dash-rangos', buckets);
+}
+
+// "Ubicación preferida": se toma el tagline del proyecto (trae el sector,
+// ej. "Sector Antenas de Misicata, Cuenca") y, si no existe, la ubicación
+// general o el nombre del proyecto como respaldo.
+function renderUbicaciones(filas) {
+  const counts = {};
+  filas.forEach(f => {
+    const proy = f.cotizador_proyectos;
+    const label = proy?.tagline || proy?.ubicacion || proy?.nombre || f.proyecto_id || 'Sin proyecto';
+    counts[label] = (counts[label] || 0) + 1;
+  });
+  const entries = Object.entries(counts).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
+  renderBars('dash-ubicaciones', entries);
+}
+
+// Tipología de mayor/menor demanda: cuenta cuántas veces se cotizó cada
+// "tipo" de unidad (Casa Tipo 1, Departamento, Suite, Local, Lote…). Una
+// proforma con varias unidades cuenta una vez por cada tipo que incluya.
+// Los históricos generados antes de esta actualización no traen "tipo"
+// guardado y quedan agrupados en "Sin especificar".
+function renderTipologias(filas) {
+  const counts = {};
+  filas.forEach(f => (Array.isArray(f.unidades) ? f.unidades : []).forEach(u => {
+    const t = u.tipo || 'Sin especificar';
+    counts[t] = (counts[t] || 0) + 1;
+  }));
+  const entries = Object.entries(counts).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
+  renderBars('dash-tipologias', entries);
+
+  const resumen = document.getElementById('dash-tipologias-resumen');
+  if (entries.length >= 2) {
+    resumen.textContent = `Mayor demanda: ${entries[0].label} (${entries[0].count}) · Menor demanda: ${entries[entries.length - 1].label} (${entries[entries.length - 1].count})`;
+  } else if (entries.length === 1) {
+    resumen.textContent = `Única tipología cotizada en estos filtros: ${entries[0].label}`;
+  } else {
+    resumen.textContent = 'Cuántas veces se cotizó cada tipo de unidad.';
+  }
+}
+
+// Encabezado que solo se ve al exportar a PDF: qué filtros estaban activos y
+// cuándo se generó, para que el PDF tenga contexto aunque se comparta suelto.
+function renderFiltrosResumenImpresion() {
+  const el = document.getElementById('dash-print-filtros');
+  if (!el) return;
+  const proyectoSel = document.getElementById('f-proyecto');
+  const proyectoTxt = proyectoSel.value ? proyectoSel.selectedOptions[0].textContent : 'Todos los proyectos';
+  const tipologiaSel = document.getElementById('f-tipologia');
+  const tipologiaTxt = tipologiaSel.value || 'Todas las tipologías';
+  const desde = document.getElementById('f-desde').value;
+  const hasta = document.getElementById('f-hasta').value;
+  const buscar = document.getElementById('f-buscar').value.trim();
+  const partes = [
+    `Proyecto: ${proyectoTxt}`,
+    `Tipología: ${tipologiaTxt}`,
+    desde ? `Desde: ${desde}` : null,
+    hasta ? `Hasta: ${hasta}` : null,
+    buscar ? `Búsqueda: "${buscar}"` : null,
+    `Generado: ${new Date().toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })}`,
+  ].filter(Boolean);
+  el.textContent = partes.join(' · ');
 }
 
 // Excel (.xlsx) pensado para importar a un CRM (Zolutium u otro) y, a la
