@@ -12,7 +12,52 @@ ni con `covers`.
 A diferencia del portafolio, **todo este sitio requiere iniciar sesión**
 (no solo el panel de admin): es material interno, no debe quedar público.
 
-## Asesores con autocompletado y dashboard de preferencias (esta entrega)
+## Motivo de compra, forma de pago y dashboard ampliado (esta entrega)
+
+**Qué cambia y por qué corre en Supabase:** agrega 2 columnas a
+`cotizador_historial`, así que necesita `supabase/update_motivo_forma_pago.sql`
+además de `supabase/update_asesores.sql` de la entrega anterior si todavía no
+lo corriste. Ambos son igual de seguros que los anteriores (se pueden correr
+más de una vez).
+
+- **Motivo de compra**: en "Datos del cliente" hay un campo nuevo — Vivienda
+  o Inversión. Queda guardado en el historial para el dashboard; no se
+  imprime en la proforma (es un dato interno de FORXA, no algo que el
+  cliente necesite ver escrito en su cotización).
+- **Forma de pago**: también en "Datos del cliente" — Financiamiento o
+  Contado. Con **Contado**, los campos de interés/plazo del financiamiento
+  se ocultan automáticamente (para cualquiera de los 5 tipos de proyecto:
+  cuotas hasta entrega, pago directo, VIP, simulación o lote) y la proforma
+  deja de mostrar tasa/cuota mensual — en su lugar aparece "Saldo a cancelar
+  de contado" con el mismo monto que antes se financiaba. **Los montos de
+  reserva/promesa/abonos no cambian** — lo único que cambia es que ese saldo
+  se paga directo en vez de a través de un banco.
+- **Dashboard de preferencias, ampliado y rediseñado** (dentro de
+  Historial): además de rango de presupuesto y tipología (ya existían), el
+  dashboard ahora muestra:
+  - **Distribución de cotizaciones por proyecto** y **proyecto más
+    consultado** (gráfico de dona).
+  - **Tipo de inmueble más cotizado**, con mayor/menor demanda (dona).
+  - **Dormitorios preferidos** (1, 2, 3, 4+).
+  - **Metraje promedio cotizado** (m² útiles/construcción, o terreno en el
+    caso de lotes).
+  - **Precio promedio por proyecto** (ticket de compra, no solo el general).
+  - **Demanda por unidad**: qué unidades específicas se cotizan más (top 8).
+  - **Demanda por período**: proformas por mes, en línea de tiempo.
+  - **Motivo de compra** y **Forma de pago**, con los datos nuevos de
+    arriba.
+  - Los gráficos (dona/barras/línea) son SVG propio, no una librería externa
+    — imprimen nítidos en "Exportar a PDF" sin depender de que el navegador
+    tenga activado "Gráficos de fondo" (esa opción solo hace falta para que
+    se vea el color de fondo de las tarjetas KPI, no para los gráficos en
+    sí).
+  - **Dato importante**: motivo de compra, forma de pago, dormitorios y
+    metraje solo están disponibles para proformas generadas *después* de
+    esta actualización — las anteriores no tienen esos datos guardados y
+    simplemente no cuentan en esos reportes (no aparecen como "ceros" ni
+    distorsionan los promedios).
+
+## Asesores con autocompletado y dashboard de preferencias (entrega anterior)
 
 **Qué cambia y por qué corre en Supabase:** agrega una tabla nueva
 (`cotizador_asesores`), así que necesita `supabase/update_asesores.sql` — es
@@ -86,7 +131,11 @@ esos pasos.** Para aplicar esta entrega:
    correrlo, el desplegable de "Datos del asesor" del cotizador aparece
    vacío. Ver el detalle en "Asesores con autocompletado y dashboard de
    preferencias" más arriba.
-6. **Si las portadas de los proyectos o las fichas de las unidades todavía no
+6. **Corre `supabase/update_motivo_forma_pago.sql`** una vez en el SQL
+   Editor — **obligatorio** para esta entrega (agrega las columnas
+   `motivo_compra` y `forma_pago` a `cotizador_historial`). Sin correrlo, el
+   cotizador no va a poder guardar proformas nuevas.
+7. **Si las portadas de los proyectos o las fichas de las unidades todavía no
    se ven**, es porque `scripts/bulk_upload_fotos.mjs` (Paso 3 abajo)
    todavía no se ha corrido contra tu proyecto de Supabase — no es un error
    de código, es que esas imágenes viven en Supabase Storage y hay que
@@ -219,15 +268,17 @@ por completo, con inspiración en una factura/invoice profesional:
 │   ├── supabase-client.js   → URL + anon key (misma que el portafolio)
 │   ├── auth.js                → login/logout + verificación de admin/historial
 │   ├── utils.js                 → formato de moneda, cuotas, URLs firmadas, WhatsApp, CSV
-│   ├── cotizador.js               → motor genérico (sirve para los 4 proyectos) + desplegable de asesor
+│   ├── cotizador.js               → motor genérico (sirve para los 4 proyectos) + desplegable de asesor + forma de pago
 │   ├── admin.js                     → CRUD de proyectos, unidades y asesores
-│   └── historial.js                   → tabla/filtros/export del historial + dashboard de preferencias
+│   ├── historial.js                   → tabla/filtros/export del historial + dashboard de preferencias
+│   └── charts.js                        → (nuevo) donut/barras/línea en SVG propio, sin librerías
 ├── supabase/
 │   ├── schema.sql                            → tablas, RLS, bucket privado (ya incluye lo nuevo)
 │   ├── seed_data.sql                         → los 4 proyectos + ~120 unidades ya cargadas
 │   ├── update_colores_proyecto.sql           → da un color propio a cada proyecto ya existente
 │   ├── update_financiamiento_v2.sql          → número de proforma, historial, 30%/70%
-│   └── update_asesores.sql                   → (nuevo, obligatorio) directorio de asesores FORXA
+│   ├── update_asesores.sql                   → directorio de asesores FORXA
+│   └── update_motivo_forma_pago.sql          → (nuevo, obligatorio) motivo de compra + forma de pago
 ├── fotos/                 → fichas extraídas de los brochures (para subir una vez)
 └── scripts/bulk_upload_fotos.mjs → sube fotos/ a Supabase Storage de un tirón
 ```

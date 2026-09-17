@@ -163,7 +163,7 @@ async function loadUnidades() {
     UNIDADES = data.map(l => ({
       id: l.id, codigo: l.codigo, nombre: `Lote ${l.codigo}`, tipo: `Categoría ${l.categoria || '—'}`,
       specsText: `${l.metraje_m2 ? l.metraje_m2 + ' m²' : ''} · ${fmtMoney(l.precio_m2)}/m²`,
-      precio: l.precio, estado: l.estado,
+      precio: l.precio, estado: l.estado, raw: l,
     }));
   } else {
     const { data, error } = await supabaseClient
@@ -233,6 +233,7 @@ function wireEvents() {
   qs('desc-monto').addEventListener('input', renderFinancingSummary);
   qs('asesor-empresa').addEventListener('change', aplicarModoAsesor);
   qs('asesor-select').addEventListener('change', aplicarModoAsesor);
+  qs('forma-pago').addEventListener('change', aplicarFormaPago);
   qs('generate-btn').onclick = generarProforma;
   qs('back-btn').onclick = () => { qs('proforma-view').hidden = true; qs('form-view').hidden = false; window.scrollTo(0, 0); };
   qs('print-btn').onclick = () => window.print();
@@ -279,8 +280,8 @@ function renderFinancingFields() {
       </div>
       <div class="field" style="max-width:260px;"><label>Número de cuotas hasta la entrega</label><input type="number" id="f-num-cuotas" min="0" step="1" value="0"></div>
       <div class="row2">
-        <div class="field"><label>Interés anual del financiamiento (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
-        <div class="field"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>
+        <div class="field fp-only"><label>Interés anual del financiamiento (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
+        <div class="field fp-only"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>
       </div>`;
   } else if (tipo === 'pago_directo') {
     // Portón del Valle: ya está listo para entrega — un solo abono (sugerido
@@ -289,9 +290,9 @@ function renderFinancingFields() {
     el.innerHTML = `
       <div class="row2">
         <div class="field"><label>Abono antes de la entrega (USD)</label><input type="number" id="f-abono" min="0" step="1" placeholder="Sugerido: ${abonoSugerido.toFixed(0)}% del precio"></div>
-        <div class="field"><label>Interés anual del financiamiento (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
+        <div class="field fp-only"><label>Interés anual del financiamiento (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
       </div>
-      <div class="field" style="max-width:260px;"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>`;
+      <div class="field fp-only" style="max-width:260px;"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>`;
   } else if (tipo === 'vip_fijo') {
     el.innerHTML = `
       <div class="field" style="max-width:260px;"><label>Reserva (%)</label><input type="number" id="f-reserva-pct" min="0" step="0.1" value="${(PROYECTO.reserva_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
@@ -305,14 +306,30 @@ function renderFinancingFields() {
       </div>
       <div class="row2">
         <div class="field"><label>Cuotas a capital (USD, opcional)</label><input type="number" id="f-capital" min="0" value="0"></div>
-        <div class="field"><label>Tasa anual simulada (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
+        <div class="field fp-only"><label>Tasa anual simulada (%)</label><input type="number" id="f-tasa" step="0.01" value="${PROYECTO.tasa_default}"></div>
       </div>
-      <div class="field"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>`;
+      <div class="field fp-only"><label>Plazo (años)</label><input type="number" id="f-plazo" value="${PROYECTO.plazo_default_anios}"></div>`;
   } else {
     el.innerHTML = `<div class="field" style="max-width:260px;"><label>Entrada (%)</label><input type="number" id="f-reserva-pct" min="0" step="0.1" value="${(PROYECTO.reserva_pct * 100).toFixed(2).replace(/\.?0+$/, '')}"></div>
       <p class="hint">Lote: entrada + saldo a coordinar directamente con el fideicomiso.</p>`;
   }
   el.querySelectorAll('input').forEach(inp => inp.addEventListener('input', renderFinancingSummary));
+  aplicarFormaPago();
+}
+
+// "Forma de pago" es una elección del cliente (no del proyecto): si paga de
+// contado, no hay préstamo bancario de por medio, así que se ocultan los
+// campos de interés/plazo (marcados con la clase fp-only en el HTML de
+// arriba) y el plan de pago deja de calcular una cuota mensual — ver
+// ajustarPorFormaPago() más abajo, que es donde se anula esa parte del plan.
+function getFormaPago() {
+  const sel = qs('forma-pago');
+  return sel ? sel.value : 'financiamiento';
+}
+function aplicarFormaPago() {
+  const esContado = getFormaPago() === 'contado';
+  document.querySelectorAll('.fp-only').forEach(el => { el.hidden = esContado; });
+  renderFinancingSummary();
 }
 
 function calcularPlan(unidad) {
@@ -340,10 +357,10 @@ function calcularPlan(unidad) {
     const tasa = parseFloat(qs('f-tasa')?.value) || PROYECTO.tasa_default;
     const plazo = parseFloat(qs('f-plazo')?.value) || PROYECTO.plazo_default_anios;
     const cuotaMensual = calcCuota(montoFinanciado, tasa, plazo * 12);
-    return {
+    return ajustarPorFormaPago({
       desc, precioFinal, reserva, promesa, numCuotas, montoCuota, cuotasTotal: (numCuotas > 0 ? cuotasTotal : 0),
       abonoTotal, saldo: montoFinanciado, montoFinanciado, tasa, plazo, cuota: cuotaMensual,
-    };
+    });
   }
 
   if (tipo === 'pago_directo') {
@@ -354,10 +371,10 @@ function calcularPlan(unidad) {
     const tasa = parseFloat(qs('f-tasa')?.value) || PROYECTO.tasa_default;
     const plazo = parseFloat(qs('f-plazo')?.value) || PROYECTO.plazo_default_anios;
     const cuotaMensual = calcCuota(montoFinanciado, tasa, plazo * 12);
-    return {
+    return ajustarPorFormaPago({
       desc, precioFinal, reserva: abono, promesa: 0, abonoTotal: abono,
       saldo: montoFinanciado, montoFinanciado, tasa, plazo, cuota: cuotaMensual,
-    };
+    });
   }
 
   const capital = parseFloat(qs('f-capital')?.value) || 0;
@@ -367,7 +384,7 @@ function calcularPlan(unidad) {
     const cuota25 = calcCuota(saldo, PROYECTO.tasa_default, PROYECTO.plazo_default_anios * 12);
     const cuota20 = calcCuota(saldo, PROYECTO.tasa_default, 20 * 12);
     const cuota15 = calcCuota(saldo, PROYECTO.tasa_default, 15 * 12);
-    return { desc, precioFinal, reserva, promesa: 0, capital, saldo, cuota: cuota25, cuota20, cuota15, aplicaCredito: unidad.raw?.aplica_vip };
+    return ajustarPorFormaPago({ desc, precioFinal, reserva, promesa: 0, capital, saldo, cuota: cuota25, cuota20, cuota15, aplicaCredito: unidad.raw?.aplica_vip });
   }
   if (tipo === 'simulacion') {
     const reserva = precioFinal * getReservaPct();
@@ -376,12 +393,31 @@ function calcularPlan(unidad) {
     const tasa = parseFloat(qs('f-tasa')?.value) || PROYECTO.tasa_default;
     const plazo = parseFloat(qs('f-plazo')?.value) || PROYECTO.plazo_default_anios;
     const cuota = calcCuota(saldo, tasa, plazo * 12);
-    return { desc, precioFinal, reserva, promesa, capital, saldo, cuota, tasa, plazo, aplicaCredito: true };
+    return ajustarPorFormaPago({ desc, precioFinal, reserva, promesa, capital, saldo, cuota, tasa, plazo, aplicaCredito: true });
   }
   // lote
   const reserva = precioFinal * getReservaPct();
   const saldo = Math.max(0, precioFinal - reserva);
-  return { desc, precioFinal, reserva, promesa: 0, capital: 0, saldo, cuota: 0, aplicaCredito: false };
+  return ajustarPorFormaPago({ desc, precioFinal, reserva, promesa: 0, capital: 0, saldo, cuota: 0, aplicaCredito: false });
+}
+
+// Si el cliente paga de contado, no hay préstamo bancario: el saldo
+// pendiente (reserva/promesa/abonos ya están bien calculados arriba, eso no
+// cambia) deja de tener tasa/plazo/cuota mensual asociados — se cancela
+// directo. buildPagoBreakdown()/renderFinancingSummary() ya saben omitir esas
+// líneas cuando vienen undefined/0, así que no hace falta tocarlas aparte.
+function ajustarPorFormaPago(plan) {
+  if (getFormaPago() === 'contado') {
+    plan.tasa = undefined;
+    plan.plazo = undefined;
+    plan.cuota = 0;
+    plan.cuota20 = undefined;
+    plan.cuota15 = undefined;
+    plan.formaPago = 'contado';
+  } else {
+    plan.formaPago = 'financiamiento';
+  }
+  return plan;
 }
 
 function renderFinancingSummary() {
@@ -406,7 +442,7 @@ function renderFinancingSummary() {
     if (plan.promesa) rows += `<div class="pf-line"><span>Promesa de compraventa</span><b>${fmtMoney(plan.promesa)}</b></div>`;
   }
 
-  rows += `<div class="pf-line"><span><strong>Monto a financiar</strong></span><b>${fmtMoney(plan.saldo)}</b></div>`;
+  rows += `<div class="pf-line"><span><strong>${plan.formaPago === 'contado' ? 'Saldo a cancelar de contado' : 'Monto a financiar'}</strong></span><b>${fmtMoney(plan.saldo)}</b></div>`;
   if (plan.tasa !== undefined) rows += `<div class="pf-line"><span>Interés anual</span><b>${plan.tasa}%</b></div>`;
   if (plan.plazo !== undefined) rows += `<div class="pf-line"><span>Plazo</span><b>${plan.plazo} años</b></div>`;
   if (plan.cuota) rows += `<div class="pf-line"><span>Cuota mensual estimada</span><b>${fmtMoney(plan.cuota)}</b></div>`;
@@ -433,7 +469,7 @@ function buildPagoBreakdown(plan) {
     if (plan.capital) rows += `<div class="pf-line"><span>Pagos/cuotas a capital</span><b>${fmtMoney(plan.capital)}</b></div>`;
   }
 
-  rows += `<div class="pf-line total"><span>Monto a financiar</span><b>${fmtMoney(plan.saldo)}</b></div>`;
+  rows += `<div class="pf-line total"><span>${plan.formaPago === 'contado' ? 'Saldo a cancelar de contado' : 'Monto a financiar'}</span><b>${fmtMoney(plan.saldo)}</b></div>`;
   if (plan.tasa !== undefined) rows += `<div class="pf-line"><span>Interés anual</span><b>${plan.tasa}%</b></div>`;
   if (plan.plazo !== undefined) rows += `<div class="pf-line"><span>Plazo</span><b>${plan.plazo} años</b></div>`;
 
@@ -473,6 +509,8 @@ async function generarProforma() {
   if (!asesorNombre || !asesorTelLocal) { showToast('Ingresa tu nombre y teléfono de asesor.'); return; }
   const nombre = qs('cli-nombre').value.trim();
   if (!nombre) { showToast('Ingresa el nombre del cliente.'); return; }
+  const motivoCompra = qs('motivo-compra').value;
+  const formaPagoValor = getFormaPago();
   const asesorSeleccionadoId = qs('asesor-select') ? qs('asesor-select').value : '';
   guardarAsesor(asesorNombre, asesorTelLocal, asesorEmpresa, asesorTelCode, asesorSeleccionadoId);
   const asesorTel = formatTelefono(asesorTelCode, asesorTelLocal); // ej. '+593 991234567', para mostrar
@@ -515,7 +553,7 @@ async function generarProforma() {
       <div class="pf-unit">
         <div class="pf-unit-head">
           <div>
-            <div class="tag">Propiedad cotizada</div>
+            <div class="tag">Propiedad cotizada${plan.formaPago === 'contado' ? ' · Pago de contado' : ''}</div>
             <h2>${u.nombre}</h2>
             <div class="specs">${u.specsText}</div>
           </div>
@@ -609,7 +647,14 @@ async function generarProforma() {
     asesor_nombre: asesorNombre, asesor_telefono: asesorTel,
     proyecto_id: PROYECTO.id,
     cliente_nombre: nombre, cliente_telefono: tel, cliente_correo: email,
-    unidades: seleccionadas.map(u => ({ codigo: u.codigo, nombre: u.nombre, precio_lista: u.precio, tipo: u.tipo || null })),
+    unidades: seleccionadas.map(u => ({
+      codigo: u.codigo, nombre: u.nombre, precio_lista: u.precio, tipo: u.tipo || null,
+      dormitorios: u.raw?.dormitorios ?? null,
+      area_m2: PROYECTO.tipo_financiamiento === 'lote'
+        ? (u.raw?.metraje_m2 ?? null)
+        : (u.raw?.area_util_m2 ?? u.raw?.construccion_m2 ?? u.raw?.area_total_m2 ?? u.raw?.terreno_m2 ?? null),
+    })),
+    motivo_compra: motivoCompra || null, forma_pago: formaPagoValor,
     descuento: plan0.desc, precio_final: plan0.precioFinal, reserva: plan0.reserva, promesa: plan0.promesa || 0,
     abono_total: plan0.abonoTotal ?? plan0.reserva, monto_financiado: plan0.saldo,
     tasa_usada: plan0.tasa ?? null, plazo_anios_usado: plan0.plazo ?? null,

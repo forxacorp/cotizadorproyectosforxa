@@ -79,27 +79,72 @@
 
         <div class="dash-kpis">
           <div class="dash-kpi"><span class="label">Proformas analizadas</span><span class="value" id="kpi-total">0</span></div>
-          <div class="dash-kpi"><span class="label">Ticket promedio</span><span class="value" id="kpi-ticket">—</span></div>
-          <div class="dash-kpi"><span class="label">Financiado promedio</span><span class="value" id="kpi-financiado">—</span></div>
-          <div class="dash-kpi"><span class="label">Cuota mensual promedio</span><span class="value" id="kpi-cuota">—</span></div>
+          <div class="dash-kpi"><span class="label">Proyecto más consultado</span><span class="value dash-kpi-text" id="kpi-proyecto-top">—</span></div>
+          <div class="dash-kpi"><span class="label">Tipo más cotizado</span><span class="value dash-kpi-text" id="kpi-tipo-top">—</span></div>
+          <div class="dash-kpi"><span class="label">Metraje promedio cotizado</span><span class="value" id="kpi-metraje">—</span></div>
+        </div>
+        <div class="dash-kpis">
+          <div class="dash-kpi dash-kpi-secondary"><span class="label">Ticket promedio</span><span class="value" id="kpi-ticket">—</span></div>
+          <div class="dash-kpi dash-kpi-secondary"><span class="label">Financiado promedio</span><span class="value" id="kpi-financiado">—</span></div>
+          <div class="dash-kpi dash-kpi-secondary"><span class="label">Cuota mensual promedio</span><span class="value" id="kpi-cuota">—</span></div>
+        </div>
+
+        <div class="dash-grid-2">
+          <div class="card">
+            <h3>Distribución de cotizaciones por proyecto</h3>
+            <p class="hint" style="margin-bottom:14px;">Cómo se reparte la demanda entre los proyectos de FORXA.</p>
+            <div id="dash-proyecto-donut"></div>
+          </div>
+          <div class="card">
+            <h3>Tipo de inmueble más cotizado</h3>
+            <p class="hint" id="dash-tipo-resumen" style="margin-bottom:14px;">Departamentos, casas, suites, locales…</p>
+            <div id="dash-tipo-donut"></div>
+          </div>
+        </div>
+
+        <div class="dash-grid-2">
+          <div class="card">
+            <h3>Dormitorios preferidos</h3>
+            <p class="hint" style="margin-bottom:14px;">Distribución más demandada.</p>
+            <div id="dash-dormitorios"></div>
+          </div>
+          <div class="card">
+            <h3>Rango de precio consultado</h3>
+            <p class="hint" style="margin-bottom:14px;">Capacidad de compra reflejada en las cotizaciones.</p>
+            <div id="dash-rangos"></div>
+          </div>
+        </div>
+
+        <div class="dash-grid-2">
+          <div class="card">
+            <h3>Precio promedio por proyecto</h3>
+            <p class="hint" style="margin-bottom:14px;">Ticket de compra de los leads, por proyecto.</p>
+            <div id="dash-precio-proyecto" class="dash-bars"></div>
+          </div>
+          <div class="card">
+            <h3>Demanda por unidad</h3>
+            <p class="hint" style="margin-bottom:14px;">Qué unidades concentran el interés (top 8).</p>
+            <div id="dash-unidad" class="dash-bars"></div>
+          </div>
+        </div>
+
+        <div class="dash-grid-2">
+          <div class="card">
+            <h3>Motivo de compra</h3>
+            <p class="hint" style="margin-bottom:14px;">Inversión vs. vivienda.</p>
+            <div id="dash-motivo-donut"></div>
+          </div>
+          <div class="card">
+            <h3>Forma de pago</h3>
+            <p class="hint" style="margin-bottom:14px;">Financiamiento vs. contado.</p>
+            <div id="dash-formapago-donut"></div>
+          </div>
         </div>
 
         <div class="card">
-          <h3>Rango de presupuesto</h3>
-          <p class="hint" style="margin-bottom:14px;">Cuántas proformas cayeron en cada franja de precio final.</p>
-          <div id="dash-rangos" class="dash-bars"></div>
-        </div>
-
-        <div class="card">
-          <h3>Ubicación preferida</h3>
-          <p class="hint" style="margin-bottom:14px;">Sector/proyecto de las proformas generadas.</p>
-          <div id="dash-ubicaciones" class="dash-bars"></div>
-        </div>
-
-        <div class="card">
-          <h3>Tipología: mayor y menor demanda</h3>
-          <p class="hint" id="dash-tipologias-resumen" style="margin-bottom:14px;"></p>
-          <div id="dash-tipologias" class="dash-bars"></div>
+          <h3>Demanda por período</h3>
+          <p class="hint" style="margin-bottom:14px;">Evolución del interés en el tiempo (proformas por mes, últimos 12 meses del rango filtrado).</p>
+          <div id="dash-periodo"></div>
         </div>
       </div>
     </div>
@@ -112,6 +157,7 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/charts.js"></script>
 <script src="js/historial.js"></script>
 </body>
 </html>

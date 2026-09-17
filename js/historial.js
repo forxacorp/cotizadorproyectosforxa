@@ -177,20 +177,37 @@ function filaHTML(f) {
 }
 
 // ============================================================================
-// Dashboard de preferencias de compra: KPIs + 3 reportes (rango de
-// presupuesto, ubicación preferida, tipología de mayor/menor demanda) sobre
+// Dashboard de preferencias de compra: KPIs + reportes (proyecto, tipo de
+// inmueble, dormitorios, rango de precio, precio promedio por proyecto,
+// motivo de compra, forma de pago, demanda por unidad y por período) sobre
 // las proformas que cumplen los filtros de arriba. Se recalcula cada vez que
 // cargarHistorial() trae datos nuevos — no hace consultas propias a la BD.
-// Las "barras" son simples divs con % de ancho (no una librería de gráficos)
-// para que impriman nítidas en el PDF sin depender de un CDN externo.
+// Los gráficos (donut/barras/línea) los dibuja js/charts.js en SVG puro.
 // ============================================================================
 
 function promedio(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
 function numsValidos(filas, campo) {
   return filas.map(f => Number(f[campo])).filter(n => !isNaN(n) && n > 0);
 }
+// Formato compacto para ejes de gráfico ($85k en vez de $85,000.00) — fmtMoney
+// (utils.js) es el que se usa en el resto del sitio para montos "serios".
+function fmtMoneyShort(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1000) return '$' + Math.round(n / 1000) + 'k';
+  return '$' + Math.round(n);
+}
+
+function todasLasUnidades(filas) {
+  const out = [];
+  filas.forEach(f => (Array.isArray(f.unidades) ? f.unidades : []).forEach(u => out.push(u)));
+  return out;
+}
 
 function renderDashboard(filas) {
+  const unidadesFlat = todasLasUnidades(filas);
+
+  // ---- KPIs ----
   document.getElementById('kpi-total').textContent = filas.length;
   const precios = numsValidos(filas, 'precio_final');
   const financiados = numsValidos(filas, 'monto_financiado');
@@ -198,92 +215,170 @@ function renderDashboard(filas) {
   document.getElementById('kpi-ticket').textContent = precios.length ? fmtMoney(promedio(precios)) : '—';
   document.getElementById('kpi-financiado').textContent = financiados.length ? fmtMoney(promedio(financiados)) : '—';
   document.getElementById('kpi-cuota').textContent = cuotas.length ? fmtMoney(promedio(cuotas)) + ' /mes' : '—';
+  const areas = unidadesFlat.map(u => Number(u.area_m2)).filter(n => !isNaN(n) && n > 0);
+  document.getElementById('kpi-metraje').textContent = areas.length ? `${Math.round(promedio(areas))} m²` : '—';
 
-  renderRangosPresupuesto(precios);
-  renderUbicaciones(filas);
-  renderTipologias(filas);
+  const proyectoEntries = calcularDistribucionProyecto(filas);
+  const tipoEntries = calcularDistribucionTipo(unidadesFlat);
+  document.getElementById('kpi-proyecto-top').textContent = proyectoEntries.length ? proyectoEntries[0].label : '—';
+  document.getElementById('kpi-tipo-top').textContent = tipoEntries.length ? tipoEntries[0].label : '—';
+
+  // ---- Gráficos ----
+  renderDonutCard('dash-proyecto-donut', proyectoEntries, { centerLabel: 'proformas' });
+  renderDonutCard('dash-tipo-donut', tipoEntries, { centerLabel: 'unidades' });
+  renderResumenTipo(tipoEntries);
+  renderDormitorios(unidadesFlat);
+  renderRangosPrecio(precios);
+  renderPrecioPorProyecto(filas);
+  renderDemandaUnidad(unidadesFlat);
+  renderDonutCard('dash-motivo-donut', calcularDistribucionCampo(filas, 'motivo_compra', { inversion: 'Inversión', vivienda: 'Vivienda' }), { centerLabel: 'proformas' });
+  renderDonutCard('dash-formapago-donut', calcularDistribucionCampo(filas, 'forma_pago', { financiamiento: 'Financiamiento', contado: 'Contado' }), { centerLabel: 'proformas' });
+  renderDemandaPeriodo(filas);
   renderFiltrosResumenImpresion();
 }
 
-// Renderiza una lista de barras horizontales (label / barra / conteo + %)
-// dentro del contenedor containerId. entries = [{ label, count }].
-function renderBars(containerId, entries) {
-  const el = document.getElementById(containerId);
-  if (!entries.length) { el.innerHTML = '<div class="empty-state">Sin datos para estos filtros.</div>'; return; }
-  const max = Math.max(...entries.map(e => e.count));
-  const total = entries.reduce((a, b) => a + b.count, 0);
-  el.innerHTML = entries.map(e => `
-    <div class="dash-bar-row">
-      <div class="dash-bar-label">${e.label}</div>
-      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${max ? (e.count / max * 100) : 0}%"></div></div>
-      <div class="dash-bar-count"><strong>${e.count}</strong> (${total ? Math.round(e.count / total * 100) : 0}%)</div>
-    </div>`).join('');
+// "Distribución de cotizaciones por proyecto" — cuenta proformas por
+// proyecto_id, usando el nombre real del proyecto (no el sector/tagline: acá
+// lo que se pide es por proyecto, a diferencia de una vista por ubicación).
+function calcularDistribucionProyecto(filas) {
+  const counts = {};
+  filas.forEach(f => {
+    const label = f.cotizador_proyectos?.nombre || f.proyecto_id || 'Sin proyecto';
+    counts[label] = (counts[label] || 0) + 1;
+  });
+  return Object.entries(counts).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 }
 
-// Divide el precio final en 5 franjas iguales entre el mínimo y el máximo de
-// las proformas filtradas (en vez de rangos fijos en USD) para que el
-// reporte tenga sentido tanto en proyectos de $80k como en uno de $300k.
-function renderRangosPresupuesto(precios) {
-  if (!precios.length) { renderBars('dash-rangos', []); return; }
+// "Tipo de inmueble más cotizado" — a partir de unidades[].tipo (Casa Tipo 1,
+// Departamento, Suite, Local, Lote…). Una proforma con varias unidades cuenta
+// una vez por cada tipo que incluya.
+function calcularDistribucionTipo(unidadesFlat) {
+  const counts = {};
+  unidadesFlat.forEach(u => {
+    const t = u.tipo || 'Sin especificar';
+    counts[t] = (counts[t] || 0) + 1;
+  });
+  return Object.entries(counts).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+}
+
+function renderResumenTipo(entries) {
+  const el = document.getElementById('dash-tipo-resumen');
+  if (!el) return;
+  if (entries.length >= 2) {
+    el.textContent = `Mayor demanda: ${entries[0].label} (${entries[0].value}) · Menor demanda: ${entries[entries.length - 1].label} (${entries[entries.length - 1].value})`;
+  } else if (entries.length === 1) {
+    el.textContent = `Única tipología cotizada en estos filtros: ${entries[0].label}`;
+  } else {
+    el.textContent = 'Departamentos, casas, suites, locales…';
+  }
+}
+
+// Genérico para campos de una sola opción con etiquetas fijas (motivo_compra,
+// forma_pago) — cuenta cuántas proformas tienen cada valor. Los valores nulos
+// (proformas de antes de esta actualización) no se cuentan, no se inventan.
+function calcularDistribucionCampo(filas, campo, etiquetas) {
+  const counts = {};
+  filas.forEach(f => {
+    const v = f[campo];
+    if (!v) return;
+    const label = etiquetas[v] || v;
+    counts[label] = (counts[label] || 0) + 1;
+  });
+  return Object.entries(counts).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+}
+
+// "Dormitorios preferidos" — se agrupa por número exacto de dormitorios (no
+// por frecuencia como los demás, sino ordenado 1, 2, 3, 4+ — así se lee como
+// una escala, no como un ranking).
+function renderDormitorios(unidadesFlat) {
+  const counts = {};
+  unidadesFlat.forEach(u => {
+    const d = Number(u.dormitorios);
+    const key = (!u.dormitorios || isNaN(d)) ? 'Sin especificar' : (d >= 4 ? '4+' : String(d));
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  const orden = ['1', '2', '3', '4+', 'Sin especificar'];
+  const entries = orden.filter(k => counts[k]).map(k => ({ label: k === 'Sin especificar' ? k : `${k} dorm.`, value: counts[k] }));
+  document.getElementById('dash-dormitorios').innerHTML = entries.length
+    ? svgBarChart(entries)
+    : '<div class="empty-state">Sin datos para estos filtros.</div>';
+}
+
+// "Rango de precio consultado" — 5 franjas iguales entre el mínimo y el
+// máximo de las proformas filtradas (no franjas fijas en USD), para que
+// tenga sentido tanto en un proyecto de $80k como en uno de $300k.
+function renderRangosPrecio(precios) {
+  const el = document.getElementById('dash-rangos');
+  if (!precios.length) { el.innerHTML = '<div class="empty-state">Sin datos para estos filtros.</div>'; return; }
   const min = Math.min(...precios), max = Math.max(...precios);
   const NUM_BUCKETS = 5;
   let buckets;
   if (min === max) {
-    buckets = [{ label: fmtMoney(min), count: precios.length }];
+    buckets = [{ label: fmtMoneyShort(min), value: precios.length }];
   } else {
     const step = (max - min) / NUM_BUCKETS;
     buckets = Array.from({ length: NUM_BUCKETS }, (_, i) => ({
-      from: min + step * i,
-      to: i === NUM_BUCKETS - 1 ? max : min + step * (i + 1),
-      count: 0,
+      from: min + step * i, to: i === NUM_BUCKETS - 1 ? max : min + step * (i + 1), value: 0,
     }));
     precios.forEach(p => {
       let idx = Math.floor((p - min) / step);
       if (idx >= NUM_BUCKETS) idx = NUM_BUCKETS - 1;
       if (idx < 0) idx = 0;
-      buckets[idx].count++;
+      buckets[idx].value++;
     });
-    buckets.forEach(b => { b.label = `${fmtMoney(b.from)} – ${fmtMoney(b.to)}`; });
+    buckets.forEach(b => { b.label = `${fmtMoneyShort(b.from)}–${fmtMoneyShort(b.to)}`; });
   }
-  renderBars('dash-rangos', buckets);
+  el.innerHTML = svgBarChart(buckets);
 }
 
-// "Ubicación preferida": se toma el tagline del proyecto (trae el sector,
-// ej. "Sector Antenas de Misicata, Cuenca") y, si no existe, la ubicación
-// general o el nombre del proyecto como respaldo.
-function renderUbicaciones(filas) {
-  const counts = {};
+// "Precio promedio por proyecto" — no es un conteo, es el ticket promedio de
+// cada proyecto; se muestra como ranking horizontal en vez de donut porque
+// acá lo que importa es comparar montos, no proporciones de un total.
+function renderPrecioPorProyecto(filas) {
+  const porProyecto = {};
   filas.forEach(f => {
-    const proy = f.cotizador_proyectos;
-    const label = proy?.tagline || proy?.ubicacion || proy?.nombre || f.proyecto_id || 'Sin proyecto';
+    const precio = Number(f.precio_final);
+    if (isNaN(precio) || precio <= 0) return;
+    const label = f.cotizador_proyectos?.nombre || f.proyecto_id || 'Sin proyecto';
+    (porProyecto[label] = porProyecto[label] || []).push(precio);
+  });
+  const entries = Object.entries(porProyecto)
+    .map(([label, arr]) => ({ label, value: Math.round(promedio(arr)) }))
+    .sort((a, b) => b.value - a.value);
+  renderRankedBars('dash-precio-proyecto', entries, { formatValue: fmtMoney, showPct: false });
+}
+
+// "Demanda por unidad" — qué códigos de unidad concentran el interés (top 8).
+function renderDemandaUnidad(unidadesFlat) {
+  const counts = {};
+  unidadesFlat.forEach(u => {
+    const label = u.nombre || u.codigo || 'Sin código';
     counts[label] = (counts[label] || 0) + 1;
   });
-  const entries = Object.entries(counts).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
-  renderBars('dash-ubicaciones', entries);
+  const entries = Object.entries(counts).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8);
+  renderRankedBars('dash-unidad', entries, { showPct: true });
 }
 
-// Tipología de mayor/menor demanda: cuenta cuántas veces se cotizó cada
-// "tipo" de unidad (Casa Tipo 1, Departamento, Suite, Local, Lote…). Una
-// proforma con varias unidades cuenta una vez por cada tipo que incluya.
-// Los históricos generados antes de esta actualización no traen "tipo"
-// guardado y quedan agrupados en "Sin especificar".
-function renderTipologias(filas) {
+// "Demanda por período" — proformas por mes (según created_at), hasta los
+// últimos 12 meses del rango filtrado para que el eje no se sature.
+function renderDemandaPeriodo(filas) {
   const counts = {};
-  filas.forEach(f => (Array.isArray(f.unidades) ? f.unidades : []).forEach(u => {
-    const t = u.tipo || 'Sin especificar';
-    counts[t] = (counts[t] || 0) + 1;
-  }));
-  const entries = Object.entries(counts).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
-  renderBars('dash-tipologias', entries);
-
-  const resumen = document.getElementById('dash-tipologias-resumen');
-  if (entries.length >= 2) {
-    resumen.textContent = `Mayor demanda: ${entries[0].label} (${entries[0].count}) · Menor demanda: ${entries[entries.length - 1].label} (${entries[entries.length - 1].count})`;
-  } else if (entries.length === 1) {
-    resumen.textContent = `Única tipología cotizada en estos filtros: ${entries[0].label}`;
-  } else {
-    resumen.textContent = 'Cuántas veces se cotizó cada tipo de unidad.';
-  }
+  filas.forEach(f => {
+    if (!f.created_at) return;
+    const d = new Date(f.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  let keys = Object.keys(counts).sort();
+  if (keys.length > 12) keys = keys.slice(-12);
+  const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const points = keys.map(k => {
+    const [y, m] = k.split('-');
+    return { label: `${MESES[parseInt(m, 10) - 1]} ${y.slice(2)}`, value: counts[k] };
+  });
+  document.getElementById('dash-periodo').innerHTML = points.length
+    ? svgLineChart(points)
+    : '<div class="empty-state">Sin datos para estos filtros.</div>';
 }
 
 // Encabezado que solo se ve al exportar a PDF: qué filtros estaban activos y
