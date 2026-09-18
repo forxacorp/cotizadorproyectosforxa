@@ -1,8 +1,9 @@
 # FORXA — Cotizador interno
 
-Herramienta interna para generar proformas en PDF de los 4 proyectos de FORXA
-(Mirador de Misicata, AURA, Álabes y Portón del Valle). Sitio estático (sin
-build), con Supabase como backend: base de datos + login + fotos.
+Herramienta interna para generar proformas en PDF de los 5 proyectos de FORXA
+(Mirador de Misicata, AURA, Álabes, Portón del Valle y Arcus Suites & Lofts).
+Sitio estático (sin build), con Supabase como backend: base de datos + login
++ fotos.
 
 Vive en el **mismo proyecto de Supabase** que tu web de portafolio público
 (`jjdybtskzqpybrltdnss`), pero en tablas separadas con prefijo `cotizador_` y
@@ -12,7 +13,81 @@ ni con `covers`.
 A diferencia del portafolio, **todo este sitio requiere iniciar sesión**
 (no solo el panel de admin): es material interno, no debe quedar público.
 
-## Motivo de compra, forma de pago y dashboard ampliado (esta entrega)
+## Arcus Suites & Lofts + corrección de Portón del Valle (esta entrega)
+
+### Arcus Suites & Lofts — proyecto nuevo (5º del cotizador)
+
+Corre `supabase/update_arcus.sql` una vez en el SQL Editor — **obligatorio**,
+crea el proyecto y sus 77 unidades.
+
+- **Fuente de datos**: `lista_de_precios_ARCUS__2___1_.xlsx` (no el sitio
+  `arcus-landing_final.zip` que también mandaste — ese es un sitio público
+  aparte, con su propio Supabase distinto al del cotizador; de ahí solo tomé
+  el logo y el color de marca, nunca disponibilidad ni precios).
+- **77 unidades cargadas**: 7 locales comerciales, 6 islas comerciales, 41
+  lofts y 23 suites. **Omití el departamento 603** como pediste — es el
+  único del edificio y en el Excel ya figura "Vendido".
+- **Política de compra: copiada de AURA, tal cual pediste** — reserva 2% +
+  promesa 8% + cuotas hasta la entrega (30% de abono), 70% restante
+  financiado a 10.5%/20 años (el asesor edita tasa y plazo en cada
+  cotización). `permite_descuento_manual = false`, igual que AURA.
+- **Pendiente, no lo hice porque no lo pediste**: el Excel trae una segunda
+  hoja "política comercial" con descuentos automáticos por categoría
+  (Signature 3%, Classic 4%, Essential 5% — cada unidad ya quedó etiquetada
+  con su categoría en el campo "planta", ej. "Piso 3 · Signature"). El
+  cotizador hoy solo soporta un descuento manual libre, no reglas
+  automáticas por categoría — si quieres que el sistema lo sugiera solo,
+  es un cambio aparte.
+- **Fotos**: las 77 fichas técnicas del brochure (`img/fichas/` del zip) ya
+  están renombradas al código de cada unidad y listas para subir — ver
+  "Fotos de Arcus" más abajo. El logo (`assets/logos/arcus.png`) ya viene
+  incluido en este zip, no hace falta subirlo aparte.
+- **Sin foto de portada a propósito**: las fotos exteriores/interiores del
+  brochure (`img/exterior/`, `img/interior/` del zip que ya tienes) traen el
+  logo y una etiqueta tipo "VISTA FRONTAL" o "SALA" incrustados en la propia
+  imagen — usarlas tal cual duplicaría el nombre del proyecto (una vez de la
+  imagen, otra vez del texto que pone el sitio encima) y dejaría una
+  etiqueta suelta sin sentido en la tarjeta. Por eso Arcus usa el degradé de
+  su color de marca (café/chocolate) como portada, igual que hacen los
+  proyectos sin foto todavía. Si me pasas una toma sin texto incrustado, o
+  quieres que recorte una de las que ya tienes, la agrego.
+
+#### Fotos de Arcus — cómo subirlas
+
+1. Descomprime `fotos_arcus.zip` (aparte, en esta entrega) dentro de tu
+   carpeta `fotos/`, de forma que quede `fotos/arcus/001.jpg`,
+   `fotos/arcus/102.jpg`, etc. (77 archivos, ya nombrados con el código
+   exacto de cada unidad — nada que renombrar a mano).
+2. Corre `scripts/bulk_upload_fotos.mjs` (Paso 3 más abajo) igual que la
+   primera vez — sube también lo nuevo de Arcus sin tocar lo que ya subiste
+   de los otros 4 proyectos.
+
+### Portón del Valle — corregí un bug de origen (no era falta de datos)
+
+Corre `supabase/update_porton_lotes.sql` una vez en el SQL Editor —
+**obligatorio**, o Portón del Valle sigue mostrando el grid de unidades
+vacío en el cotizador.
+
+Los 33 lotes de Portón del Valle **ya estaban cargados** desde la primera
+entrega (tabla `cotizador_inventario_extra`), pero el proyecto tiene
+`tipo_financiamiento = 'pago_directo'`, y el código del cotizador solo
+consulta esa tabla cuando el proyecto es de tipo `'lote'` — nunca coincidían,
+así que esos 33 lotes nunca llegaron a mostrarse, ni en el cotizador ni en
+Administrar. La imagen `Mesa_de_trabajo` que mandaste con la disponibilidad
+resultó ser exactamente la misma información ya cargada (comparé los 31
+lotes disponibles uno por uno: cero diferencias en área o precio), así que
+no hizo falta recapturar nada — el script solo mueve esos 33 lotes a la
+tabla que sí se consulta, conservando la política de pago directo que ya
+estaba pensada para Portón ("ya está listo para entrega": abono sugerido
+30% + resto financiable).
+
+**Corrección real que sí encontré**: el lote **A82** figuraba disponible en
+la base, pero no aparece en tu lista de disponibles más reciente. Lo marqué
+`no_disponible` con una nota — revísalo desde **Administrar → Portón del
+Valle**, columna **Nota** (nueva en esta entrega, antes el panel no
+mostraba ese campo para ninguna unidad).
+
+## Motivo de compra, forma de pago y dashboard ampliado (entrega anterior)
 
 **Qué cambia y por qué corre en Supabase:** agrega 2 columnas a
 `cotizador_historial`, así que necesita `supabase/update_motivo_forma_pago.sql`
@@ -132,10 +207,18 @@ esos pasos.** Para aplicar esta entrega:
    vacío. Ver el detalle en "Asesores con autocompletado y dashboard de
    preferencias" más arriba.
 6. **Corre `supabase/update_motivo_forma_pago.sql`** una vez en el SQL
-   Editor — **obligatorio** para esta entrega (agrega las columnas
-   `motivo_compra` y `forma_pago` a `cotizador_historial`). Sin correrlo, el
-   cotizador no va a poder guardar proformas nuevas.
-7. **Si las portadas de los proyectos o las fichas de las unidades todavía no
+   Editor — **obligatorio** (agrega las columnas `motivo_compra` y
+   `forma_pago` a `cotizador_historial`). Sin correrlo, el cotizador no va a
+   poder guardar proformas nuevas.
+7. **Corre `supabase/update_arcus.sql`** una vez en el SQL Editor —
+   **obligatorio** para esta entrega (crea el proyecto Arcus Suites & Lofts
+   y sus 77 unidades). Ver el detalle en "Arcus Suites & Lofts + corrección
+   de Portón del Valle" más arriba.
+8. **Corre `supabase/update_porton_lotes.sql`** una vez en el SQL Editor —
+   **obligatorio** para esta entrega (mueve los 33 lotes de Portón del Valle
+   a la tabla que el cotizador sí consulta — sin esto, Portón sigue
+   mostrando el grid de unidades vacío).
+9. **Si las portadas de los proyectos o las fichas de las unidades todavía no
    se ven**, es porque `scripts/bulk_upload_fotos.mjs` (Paso 3 abajo)
    todavía no se ha corrido contra tu proyecto de Supabase — no es un error
    de código, es que esas imágenes viven en Supabase Storage y hay que
@@ -278,7 +361,9 @@ por completo, con inspiración en una factura/invoice profesional:
 │   ├── update_colores_proyecto.sql           → da un color propio a cada proyecto ya existente
 │   ├── update_financiamiento_v2.sql          → número de proforma, historial, 30%/70%
 │   ├── update_asesores.sql                   → directorio de asesores FORXA
-│   └── update_motivo_forma_pago.sql          → (nuevo, obligatorio) motivo de compra + forma de pago
+│   ├── update_motivo_forma_pago.sql          → motivo de compra + forma de pago
+│   ├── update_arcus.sql                      → (nuevo, obligatorio) proyecto Arcus + 77 unidades
+│   └── update_porton_lotes.sql               → (nuevo, obligatorio) corrige el bug de Portón del Valle
 ├── fotos/                 → fichas extraídas de los brochures (para subir una vez)
 └── scripts/bulk_upload_fotos.mjs → sube fotos/ a Supabase Storage de un tirón
 ```
@@ -410,6 +495,14 @@ Usa un repo privado.
   2 suites) con sus specs técnicas completas (terreno, construcción,
   dormitorios, baños, parqueos) sacadas del brochure. Antes solo había 6
   cargadas.
+- **Arcus — departamento 603 omitido a propósito**: es el único
+  departamento del edificio y en el Excel ya figura "Vendido" — no se
+  cargó, como pediste.
+- **Portón del Valle — pendiente de tu confirmación**: el lote **A82**
+  estaba disponible en la base de datos, pero no aparece en tu lista de
+  disponibles más reciente (imagen `Mesa_de_trabajo`). Lo marqué
+  `no_disponible` con una nota — confirma desde Administrar si ya se vendió
+  o reservó (o si fue un descuido al armar la lista y sigue disponible).
 
 ## Notas de esta actualización (corrección de errores reportados)
 

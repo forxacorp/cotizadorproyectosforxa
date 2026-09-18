@@ -232,6 +232,7 @@ async function loadUnits() {
       <td><select class="f-estado">
         ${['disponible','reservado','vendida','no_disponible'].map(s => `<option value="${s}" ${u.estado===s?'selected':''}>${ESTADO_LABEL[s]}</option>`).join('')}
       </select></td>
+      <td><input class="f-nota" value="${u.nota || ''}" placeholder="Nota interna (no se imprime)" style="width:170px;"></td>
       <td><input type="file" class="f-foto" accept="image/*" style="width:130px;"></td>
       <td style="white-space:nowrap;">
         <button class="icon-btn" title="Guardar" aria-label="Guardar unidad ${u.codigo || ''}" data-save>&#10003;</button>
@@ -241,7 +242,7 @@ async function loadUnits() {
   }));
 
   list.innerHTML = `<table class="admin-table"><thead><tr>
-    <th>Foto</th><th>Código</th><th>Nombre</th><th>Precio</th><th>Estado</th><th>Subir foto</th><th></th>
+    <th>Foto</th><th>Código</th><th>Nombre</th><th>Precio</th><th>Estado</th><th>Nota</th><th>Subir foto</th><th></th>
   </tr></thead><tbody>${rows.join('')}</tbody></table>`;
 
   list.querySelectorAll('[data-save]').forEach(b => b.onclick = (e) => saveUnitRow(e.target.closest('tr')));
@@ -256,6 +257,7 @@ async function saveUnitRow(tr) {
     nombre: tr.querySelector('.f-nombre').value.trim(),
     precio: parseFloat(tr.querySelector('.f-precio').value) || null,
     estado: tr.querySelector('.f-estado').value,
+    nota: tr.querySelector('.f-nota').value.trim() || null,
   };
   const fotoFile = tr.querySelector('.f-foto').files[0];
   if (fotoFile && table === 'cotizador_unidades') {
@@ -292,6 +294,7 @@ function addBlankUnit() {
     <td><input class="f-nombre" style="width:140px;"></td>
     <td><input class="f-precio" type="number" step="0.01" style="width:110px;"></td>
     <td><select class="f-estado">${['disponible','reservado','vendida','no_disponible'].map(s => `<option value="${s}">${ESTADO_LABEL[s]}</option>`).join('')}</select></td>
+    <td><input class="f-nota" placeholder="Nota interna (no se imprime)" style="width:170px;"></td>
     <td><input type="file" class="f-foto" accept="image/*" style="width:130px;"></td>
     <td style="white-space:nowrap;">
       <button class="icon-btn" title="Guardar" aria-label="Guardar unidad nueva" data-save>&#10003;</button>
